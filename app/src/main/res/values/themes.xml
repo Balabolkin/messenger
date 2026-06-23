@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.MessengerApp" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.MessengerApp.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#204865</item>
+
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+
+        <item name="postSplashScreenTheme">@style/Theme.MessengerApp</item>
+    </style>
 </resources>

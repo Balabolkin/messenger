@@ -4,44 +4,45 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.eltex.messengerapp.ui.theme.BrandPrimary
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eltex.messengerapp.feature.splash.SplashViewModel
 import com.eltex.messengerapp.ui.theme.MessengerAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
+            val splashViewModel: SplashViewModel = hiltViewModel()
+
+            val isReady by splashViewModel.isReady.collectAsStateWithLifecycle()
+            val startDestination by splashViewModel.startDestination.collectAsStateWithLifecycle()
+
+            splashScreen.setKeepOnScreenCondition {
+                !isReady
+            }
+
+            LaunchedEffect(Unit) {
+                splashViewModel.checkAuth()
+            }
+
             MessengerAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                if (isReady) {
+                    startDestination?.let { destination ->
+                        Navigation(startDestination = destination)
+                    }
                 }
             }
+//            Navigation(startDestination = NavDestinations.Main)
         }
-    }
-}
-
-@Composable
-fun Greeting(modifier: Modifier = Modifier) {
-    Text(modifier = modifier.background(color = BrandPrimary), text = "Hello")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MessengerAppTheme {
-        Greeting()
     }
 }
