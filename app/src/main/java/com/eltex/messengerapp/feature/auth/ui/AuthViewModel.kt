@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.eltex.messengerapp.data.AuthStorage
 import com.eltex.messengerapp.feature.auth.domain.AuthRepository
 import com.eltex.messengerapp.feature.auth.domain.validateLogin
 import com.eltex.messengerapp.feature.auth.domain.validatePassword
@@ -54,26 +55,31 @@ class AuthViewModel @Inject constructor(
                                 _effects.tryEmit(AuthEffect.ShowSuccess)
                             },
                             onFailure = { error ->
-                                val message = when (error) {
-                                    is java.net.UnknownHostException,
-                                    is java.net.ConnectException,
-                                    is java.net.SocketTimeoutException,
-                                    is java.io.IOException -> {
-                                        "Отсутствует соединение с сервером, проверьте ваше интернет соединение и повторите позднее"
-                                    }
-                                    else -> {
-                                        if (error.message?.contains("401") == true ||
-                                            error.message?.contains("403") == true) {
-                                            "Неправильный логин или пароль"
-                                        } else {
-                                            error.message ?: "Неизвестная ошибка"
-                                        }
-                                    }
-                                }
+                                val message = handleError(error)
                                 _effects.tryEmit(AuthEffect.ShowError(message))
                             }
                         )
                     }
+                }
+            }
+        }
+    }
+    private fun handleError(error: Throwable): String {
+        return when (error) {
+            is java.net.UnknownHostException,
+            is java.net.ConnectException,
+            is java.net.SocketTimeoutException,
+            is java.io.IOException -> {
+                "Отсутствует соединение с сервером, проверьте ваше интернет соединение и повторите позднее"
+            }
+
+            else -> {
+                if (error.message?.contains("401") == true ||
+                    error.message?.contains("403") == true
+                ) {
+                    "Неправильный логин или пароль"
+                } else {
+                    error.message ?: "Неизвестная ошибка"
                 }
             }
         }

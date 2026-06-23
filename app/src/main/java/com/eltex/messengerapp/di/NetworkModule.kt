@@ -37,8 +37,8 @@ object NetworkModule {
                 it.proceed(
                     it.request()
                         .newBuilder()
-                        .header("Api-Key", BuildConfig.API_KEY)
-                        .header("Authorization", BuildConfig.Authorization)
+//                        .header("Api-Key", BuildConfig.API_KEY) // ????????
+//                        .header("Authorization", BuildConfig.Authorization)
                         .build()
                 )
             }
@@ -91,7 +91,7 @@ object NetworkModule {
         }
 
         defaultRequest {
-            url("https://eltex-android.ru/api/")
+            url("https://study-chat.eltex-co.ru/api/v1/login")
             contentType(ContentType.Application.Json)
         }
     }

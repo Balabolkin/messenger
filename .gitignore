@@ -14,6 +14,7 @@ out/
 
 # Local
 local.properties
+<<<<<<< HEAD
 keystore.properties
 
 # OS
@@ -32,3 +33,6 @@ Thumbs.db
 # Generated
 /captures/
 .externalNativeBuild/
+=======
+secrets.properties
+>>>>>>> aef7251 (Feature/3983 authorization)

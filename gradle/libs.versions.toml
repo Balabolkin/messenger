@@ -24,6 +24,7 @@ materialIconsExtended = "1.7.8"
 navigationCompose = "2.9.8"
 ksp = "2.3.7"
 material3 = "1.4.0"
+foundationLayout = "1.11.3"
 
 [libraries]
 ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktorBom" }
@@ -65,6 +66,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

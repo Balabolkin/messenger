@@ -53,12 +53,14 @@ import com.eltex.messengerapp.R
 import com.eltex.messengerapp.feature.auth.domain.Empty
 import com.eltex.messengerapp.feature.auth.domain.LoginError
 import com.eltex.messengerapp.feature.auth.domain.PasswordError
+import com.eltex.messengerapp.ui.theme.AppColors
 import com.eltex.messengerapp.ui.theme.MessengerAppTheme
 
 @Composable
 fun AuthScreenRoute(
     modifier: Modifier = Modifier,
     viewModel: AuthViewModel = hiltViewModel(),
+    onLoginSuccess: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var showErrorDialog by remember { mutableStateOf(false) }
@@ -73,6 +75,7 @@ fun AuthScreenRoute(
                         context.getString(R.string.login_success),
                         Toast.LENGTH_SHORT
                     ).show()
+                    onLoginSuccess()
                 }
                 is AuthEffect.ShowError -> {
                     errorMessage = effect.message
@@ -103,13 +106,12 @@ fun AuthScreen(
 ) {
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
     val isButtonEnabled = state.login.isNotBlank() && state.password.isNotBlank()
-
     val shape = RoundedCornerShape(10.dp)
-    val placeholderColor = Color(0xFF878787)
 
     Box(
         modifier = modifier.fillMaxSize()
     ) {
+        // 1. Фон
         Image(
             painter = painterResource(id = R.drawable.auth_background),
             contentDescription = null,
@@ -117,20 +119,7 @@ fun AuthScreen(
             contentScale = ContentScale.Crop
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xCC000000),
-                            Color(0x88000000)
-                        )
-                    )
-                )
-        )
-
-        // Контент
+        // 3. Контент
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -138,6 +127,7 @@ fun AuthScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Логотип
             Image(
                 painter = painterResource(id = R.drawable.ic_logo),
                 contentDescription = stringResource(R.string.app_name),
@@ -147,6 +137,7 @@ fun AuthScreen(
                 contentScale = ContentScale.Fit
             )
 
+            // Заголовок
             Text(
                 text = stringResource(R.string.auth_title),
                 style = MaterialTheme.typography.headlineSmall.copy(
@@ -156,16 +147,17 @@ fun AuthScreen(
                     letterSpacing = 0.sp,
                     textAlign = TextAlign.Center
                 ),
-                color = Color.White,
+                color = AppColors.TextWhite,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 32.dp)
             )
 
+            // Поле "Логин"
             TextField(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp),
+                    .fillMaxWidth(),
+                    //.height(36.dp),
                 value = state.login,
                 onValueChange = {
                     onEvent(AuthMessage.LoginChanged(it))
@@ -174,29 +166,52 @@ fun AuthScreen(
                 singleLine = true,
                 label = {
                     Text(
-                        stringResource(R.string.login_hint),
-                        color = placeholderColor
+                        text = stringResource(R.string.login_hint),
+//                        color = AppColors.InputLabel
                     )
                 },
-                supportingText = {
-                    Text(state.loginError.toReadableString().orEmpty())
-                },
+//                supportingText = {
+//                    Text(state.loginError.toReadableString().orEmpty())
+//                },
                 shape = shape,
                 colors = TextFieldDefaults.colors(
-                    focusedLabelColor = placeholderColor,
-                    unfocusedLabelColor = placeholderColor,
-                    focusedContainerColor = Color.White.copy(alpha = 0.9f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.8f),
-                    disabledContainerColor = Color.White.copy(alpha = 0.8f),
+                    // Цвета контейнера
+                    focusedContainerColor = AppColors.InputBackground,
+                    unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
+                    disabledContainerColor = AppColors.InputBackgroundUnfocused,
+                    errorContainerColor = AppColors.ErrorContainer,
+
+                    // Цвета текста
+                    focusedTextColor = AppColors.InputText,
+                    unfocusedTextColor = AppColors.InputText,
+                    disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
+                    errorTextColor = AppColors.Error,
+
+                    // Цвета label (плейсхолдер)
+                    focusedLabelColor = AppColors.InputLabel,
+                    unfocusedLabelColor = AppColors.InputLabel,
+                    disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorLabelColor = AppColors.Error,
+
+                    // Цвета supporting text (текст ошибки)
+                    focusedSupportingTextColor = AppColors.InputLabel,
+                    unfocusedSupportingTextColor = AppColors.InputLabel,
+                    disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorSupportingTextColor = AppColors.Error,
+
+                    // Цвета курсора
+                    cursorColor = AppColors.InputLabel,
+                    errorCursorColor = AppColors.Error,
                 )
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Поле "Пароль"
             TextField(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp),
+                    .fillMaxWidth(),
+                    //.height(36.dp),
                 value = state.password,
                 onValueChange = {
                     onEvent(AuthMessage.PasswordChanged(it))
@@ -209,7 +224,10 @@ fun AuthScreen(
                     PasswordVisualTransformation()
                 },
                 label = {
-                    Text(stringResource(R.string.password_hint))
+                    Text(
+                        text = stringResource(R.string.password_hint),
+//                        color = AppColors.InputLabel
+                    )
                 },
                 supportingText = {
                     Text(state.passwordError.toReadableString().orEmpty())
@@ -234,20 +252,44 @@ fun AuthScreen(
                         Icon(
                             imageVector = icon,
                             contentDescription = description,
-                            tint = Color.White
+                            tint = AppColors.TextWhite
                         )
                     }
                 },
                 colors = TextFieldDefaults.colors(
-                    focusedLabelColor = placeholderColor,
-                    unfocusedLabelColor = placeholderColor,
-                    focusedContainerColor = Color.White.copy(alpha = 0.9f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.8f),
-                    disabledContainerColor = Color.White.copy(alpha = 0.8f),
+                    // Цвета контейнера
+                    focusedContainerColor = AppColors.InputBackground,
+                    unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
+                    disabledContainerColor = AppColors.InputBackgroundUnfocused,
+                    errorContainerColor = AppColors.ErrorContainer,
+
+                    // Цвета текста
+                    focusedTextColor = AppColors.InputText,
+                    unfocusedTextColor = AppColors.InputText,
+                    disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
+                    errorTextColor = AppColors.Error,
+
+                    // Цвета label (плейсхолдер)
+                    focusedLabelColor = AppColors.InputLabel,
+                    unfocusedLabelColor = AppColors.InputLabel,
+                    disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorLabelColor = AppColors.Error,
+
+                    // Цвета supporting text (текст ошибки)
+                    focusedSupportingTextColor = AppColors.InputLabel,
+                    unfocusedSupportingTextColor = AppColors.InputLabel,
+                    disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorSupportingTextColor = AppColors.Error,
+
+                    // Цвета курсора
+                    cursorColor = AppColors.InputLabel,
+                    errorCursorColor = AppColors.Error,
                 )
             )
-        }
 
+
+    }
+        // Кнопка "Войти"
         Button(
             modifier = Modifier
                 .fillMaxWidth()
@@ -261,19 +303,23 @@ fun AuthScreen(
             enabled = isButtonEnabled,
             shape = shape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White,
-                contentColor = Color(0xFF2196F3),
-                disabledContainerColor = Color.White.copy(alpha = 0.5f),
-                disabledContentColor = Color(0xFF2196F3).copy(alpha = 0.5f)
+                containerColor = AppColors.ButtonEnabled,
+                contentColor = AppColors.ButtonTextEnabled,
+                disabledContainerColor = AppColors.ButtonDisabled,
+                disabledContentColor = AppColors.ButtonTextDisabled
             )
         ) {
             Text(
                 text = stringResource(R.string.login),
-                color = if (isButtonEnabled) Color(0xFF1F1F1F) else Color(0xFF1F1F1F).copy(alpha = 0.5f)
+                color = if (isButtonEnabled) {
+                    AppColors.ButtonTextEnabled
+                } else {
+                    AppColors.ButtonTextDisabled
+                }
             )
         }
-    }
 
+    // AlertDialog для ошибок
     if (showErrorDialog) {
         AlertDialog(
             onDismissRequest = onDismissError,
@@ -286,6 +332,7 @@ fun AuthScreen(
             }
         )
     }
+}
 }
 
 @Composable
