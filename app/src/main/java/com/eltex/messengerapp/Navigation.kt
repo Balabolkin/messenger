@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.eltex.messengerapp.feature.auth.ui.AuthScreenRoute
 import com.eltex.messengerapp.feature.main.MainScreen
 import kotlinx.serialization.Serializable
 
@@ -22,6 +23,14 @@ fun Navigation(
         }
 
         composable<NavDestinations.Auth> {
+
+            AuthScreenRoute(
+                onLoginSuccess = {
+                    navController.navigate(NavDestinations.Main) {
+                        popUpTo(NavDestinations.Auth) { inclusive = true }
+                    }
+                }
+            )
 
         }
 

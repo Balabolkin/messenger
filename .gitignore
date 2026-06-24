@@ -32,3 +32,4 @@ Thumbs.db
 # Generated
 /captures/
 .externalNativeBuild/
+secrets.properties

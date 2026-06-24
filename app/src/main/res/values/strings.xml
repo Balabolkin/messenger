@@ -2,4 +2,20 @@
     <string name="app_name">Messenger</string>
     <string name="chats">Chats</string>
     <string name="profile">Profile</string>
+    <!-- Auth Screen -->
+    <string name="login_hint">Login</string>
+    <string name="password_hint">Password</string>
+    <string name="login">Sign In</string>
+    <string name="login_success">Login successful!</string>
+    <string name="login_empty_error">Please enter login</string>
+    <string name="password_empty_error">Please enter password</string>
+    <string name="password_too_short_error">Password must be at least 6 characters</string>
+    <string name="show_password_description">Show password</string>
+    <string name="hide_password_description">Hide password</string>
+    <string name="auth_title">Enter your login and password to log in preferences</string>
+
+    <!-- Errors -->
+    <string name="network_error">Network error</string>
+    <string name="forbidden_error">Access forbidden</string>
+    <string name="unknown_error">Unknown error</string>
 </resources>

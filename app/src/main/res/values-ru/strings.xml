@@ -3,4 +3,21 @@
     <string name="app_name">Мессенджер</string>
     <string name="chats">Чаты</string>
     <string name="profile">Профиль</string>
+
+    <!-- Auth Screen -->
+    <string name="login_hint">Логин</string>
+    <string name="password_hint">Пароль</string>
+    <string name="login">Войти</string>
+    <string name="login_success">Вход выполнен успешно!</string>
+    <string name="login_empty_error">Введите логин</string>
+    <string name="password_empty_error">Введите пароль</string>
+    <string name="password_too_short_error">Пароль должен быть минимум 6 символов</string>
+    <string name="show_password_description">Показать пароль</string>
+    <string name="hide_password_description">Скрыть пароль</string>
+    <string name="auth_title">Введите логин и пароль для входа</string>
+
+    <!-- Errors -->
+    <string name="network_error">Ошибка сети</string>
+    <string name="forbidden_error">Доступ запрещен</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
 </resources>

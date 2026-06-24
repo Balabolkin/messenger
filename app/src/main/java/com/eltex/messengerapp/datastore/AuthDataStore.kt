@@ -13,12 +13,22 @@ import javax.inject.Singleton
 class AuthDataStore @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
+    suspend fun saveAuthData(token: String, userId: String) {
+        dataStore.edit { prefs ->
+            prefs[TOKEN_KEY] = token
+            prefs[USER_ID_KEY] = userId
+        }
+    }
     suspend fun saveToken(token: String) {
         dataStore.edit { prefs ->
             prefs[TOKEN_KEY] = token
         }
     }
-
+    suspend fun saveUserId(userId: String) {
+        dataStore.edit { prefs ->
+            prefs[USER_ID_KEY] = userId
+        }
+    }
     fun isLoggedIn(): Flow<Boolean> {
         return dataStore.data.map { prefs ->
             !prefs[TOKEN_KEY].isNullOrEmpty()
@@ -34,6 +44,7 @@ class AuthDataStore @Inject constructor(
     suspend fun clear() {
         dataStore.edit { prefs ->
             prefs.remove(TOKEN_KEY)
+            prefs.remove(USER_ID_KEY)
         }
     }
 
@@ -43,5 +54,6 @@ class AuthDataStore @Inject constructor(
 
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val USER_ID_KEY = stringPreferencesKey("user_id")
     }
 }
