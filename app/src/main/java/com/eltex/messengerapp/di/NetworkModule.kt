@@ -89,7 +89,7 @@ object NetworkModule {
         }
 
         defaultRequest {
-            url("https://study-chat.eltex-co.ru/api/v1/login")
+            url("https://study-chat.eltex-co.ru/")
             contentType(ContentType.Application.Json)
         }
     }

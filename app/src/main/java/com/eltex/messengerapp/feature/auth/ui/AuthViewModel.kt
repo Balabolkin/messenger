@@ -52,8 +52,11 @@ class AuthViewModel @Inject constructor(
                     viewModelScope.launch {
                         val result = repository.login(state.login, state.password)
                         result.fold(
-                            onSuccess = { token ->
-                                authDataStore.saveToken(token)
+                            onSuccess = { authResult ->
+                                authDataStore.saveAuthData(
+                                    token = authResult.authToken,
+                                    userId = authResult.userId
+                                )
                                 _effects.tryEmit(AuthEffect.ShowSuccess)
                             },
                             onFailure = { error ->
