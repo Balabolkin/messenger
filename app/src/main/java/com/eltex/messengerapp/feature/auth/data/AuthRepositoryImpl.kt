@@ -11,6 +11,12 @@ import javax.inject.Inject
 
 @Serializable
 data class AuthResponse(
+    val status: String,
+    val data: AuthData
+)
+
+@Serializable
+data class AuthData(
     val authToken: String
 )
 class AuthRepositoryImpl @Inject constructor(
@@ -26,9 +32,11 @@ class AuthRepositoryImpl @Inject constructor(
                     "password" to password
                 ))
             }
+
             if (response.status.value == 200) {
                 val authResponse: AuthResponse = response.body()
-                Result.success(authResponse.authToken)
+                val token = authResponse.data.authToken
+                Result.success(token)
             } else {
                 val error = response.body<String>()
                 Result.failure(Exception(error))
