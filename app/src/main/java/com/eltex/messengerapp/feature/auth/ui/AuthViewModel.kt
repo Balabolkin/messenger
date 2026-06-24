@@ -13,10 +13,12 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.eltex.messengerapp.datastore.AuthDataStore
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val authDataStore: AuthDataStore
 ) : ViewModel() {
 
     var state by mutableStateOf(AuthState())
@@ -50,7 +52,8 @@ class AuthViewModel @Inject constructor(
                     viewModelScope.launch {
                         val result = repository.login(state.login, state.password)
                         result.fold(
-                            onSuccess = {
+                            onSuccess = { token ->
+                                authDataStore.saveToken(token)
                                 _effects.tryEmit(AuthEffect.ShowSuccess)
                             },
                             onFailure = { error ->
