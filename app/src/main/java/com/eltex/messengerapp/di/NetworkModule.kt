@@ -37,8 +37,6 @@ object NetworkModule {
                 it.proceed(
                     it.request()
                         .newBuilder()
-//                        .header("Api-Key", BuildConfig.API_KEY) // ????????
-//                        .header("Authorization", BuildConfig.Authorization)
                         .build()
                 )
             }

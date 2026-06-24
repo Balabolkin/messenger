@@ -1,6 +1,5 @@
 package com.eltex.messengerapp.feature.auth.data
 
-import com.eltex.messengerapp.data.AuthStorage
 import com.eltex.messengerapp.feature.auth.domain.AuthRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -12,7 +11,6 @@ import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val client: HttpClient,
-    private val authStorage: AuthStorage
 ) : AuthRepository {
 
     override suspend fun login(login: String, password: String): Result<Unit> {
@@ -26,7 +24,6 @@ class AuthRepositoryImpl @Inject constructor(
             }
             if (response.status.value == 200) {
                 val token = response.headers["Authorization"] ?: response.body<String>()
-                authStorage.saveToken(token)
                 Result.success(Unit)
             } else {
                 val error = response.body<String>()
