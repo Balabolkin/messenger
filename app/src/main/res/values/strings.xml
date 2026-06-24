@@ -1,9 +1,7 @@
 <resources>
     <string name="app_name">Messenger</string>
-<<<<<<< HEAD
     <string name="chats">Chats</string>
     <string name="profile">Profile</string>
-=======
     <!-- Auth Screen -->
     <string name="login_hint">Login</string>
     <string name="password_hint">Password</string>
@@ -20,5 +18,4 @@
     <string name="network_error">Network error</string>
     <string name="forbidden_error">Access forbidden</string>
     <string name="unknown_error">Unknown error</string>
->>>>>>> f120897 (auth ver 0)
 </resources>

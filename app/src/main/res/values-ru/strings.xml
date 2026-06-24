@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Мессенджер</string>
-<<<<<<< HEAD
     <string name="chats">Чаты</string>
     <string name="profile">Профиль</string>
-=======
+
     <!-- Auth Screen -->
     <string name="login_hint">Логин</string>
     <string name="password_hint">Пароль</string>
@@ -21,5 +20,4 @@
     <string name="network_error">Ошибка сети</string>
     <string name="forbidden_error">Доступ запрещен</string>
     <string name="unknown_error">Неизвестная ошибка</string>
->>>>>>> f120897 (auth ver 0)
 </resources>
