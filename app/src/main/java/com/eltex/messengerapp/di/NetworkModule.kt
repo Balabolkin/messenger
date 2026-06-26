@@ -2,6 +2,7 @@ package com.eltex.messengerapp.di
 
 import com.eltex.messengerapp.BuildConfig
 import com.eltex.messengerapp.domain.AppException
+import com.eltex.messengerapp.datastore.AuthDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,11 +13,16 @@ import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.network.UnresolvedAddressException
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -28,26 +34,37 @@ import javax.inject.Singleton
 @Module
 object NetworkModule {
 
-    @Singleton
     @Provides
-    fun provideOkHttpClient(): OkHttpClient =
-        OkHttpClient.Builder()
+    @Singleton
+    fun provideOkHttpClient(authDataStore: AuthDataStore): OkHttpClient {
+        return OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor {
-                it.proceed(
-                    it.request()
-                        .newBuilder()
-                        .build()
-                )
-            }
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = if (BuildConfig.DEBUG) {
-                    HttpLoggingInterceptor.Level.BODY
-                } else {
-                    HttpLoggingInterceptor.Level.NONE
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val requestBuilder = chain.request().newBuilder()
+                val token = runBlocking { authDataStore.getToken().first() }
+                val userId = runBlocking { authDataStore.getUserId().first() }
+                if (!token.isNullOrEmpty()) {
+                    requestBuilder.addHeader("X-Auth-Token", token)
                 }
-            })
+                if (!userId.isNullOrEmpty()) {
+                    requestBuilder.addHeader("X-User-Id", userId)
+                }
+                chain.proceed(requestBuilder.build())
+            }
+
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = if (BuildConfig.DEBUG) {
+                        HttpLoggingInterceptor.Level.BODY
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
+                }
+            )
             .build()
+    }
 
     @Singleton
     @Provides
@@ -62,6 +79,11 @@ object NetworkModule {
                     ignoreUnknownKeys = true
                 }
             )
+        }
+
+        install(Logging) {
+            level = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+            logger = io.ktor.client.plugins.logging.Logger.SIMPLE
         }
 
         expectSuccess = true

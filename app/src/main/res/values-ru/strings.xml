@@ -20,4 +20,9 @@
     <string name="network_error">Ошибка сети</string>
     <string name="forbidden_error">Доступ запрещен</string>
     <string name="unknown_error">Неизвестная ошибка</string>
+
+    <string name="logout_dialog_title">Выйти из аккаунта</string>
+    <string name="logout_dialog_message">Вы уверены, что хотите выйти?</string>
+    <string name="logout_dialog_confirm">Выйти</string>
+    <string name="logout_dialog_dismiss">Отменить</string>
 </resources>

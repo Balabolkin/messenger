@@ -58,6 +58,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 }
 
 dependencies {
@@ -67,7 +72,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
-    runtimeOnly(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -80,10 +84,10 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
 
     implementation(platform(libs.ktor.bom))
@@ -91,9 +95,10 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.logging)
+    implementation(libs.logging.interceptor)
+    implementation(platform(libs.ktor.bom))
 
     implementation(platform(libs.okhttp.bom))
-    implementation(libs.logging.interceptor)
 
     implementation("androidx.datastore:datastore-preferences:1.1.0")
 

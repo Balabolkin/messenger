@@ -24,11 +24,13 @@ class AuthDataStore @Inject constructor(
             prefs[TOKEN_KEY] = token
         }
     }
+
     suspend fun saveUserId(userId: String) {
         dataStore.edit { prefs ->
             prefs[USER_ID_KEY] = userId
         }
     }
+
     fun isLoggedIn(): Flow<Boolean> {
         return dataStore.data.map { prefs ->
             !prefs[TOKEN_KEY].isNullOrEmpty()
@@ -38,6 +40,12 @@ class AuthDataStore @Inject constructor(
     fun getToken(): Flow<String?> {
         return dataStore.data.map { prefs ->
             prefs[TOKEN_KEY]
+        }
+    }
+
+    fun getUserId(): Flow<String?> {
+        return dataStore.data.map { prefs ->
+            prefs[USER_ID_KEY]
         }
     }
 

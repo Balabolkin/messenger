@@ -2,6 +2,7 @@
     <string name="app_name">Messenger</string>
     <string name="chats">Chats</string>
     <string name="profile">Profile</string>
+
     <!-- Auth Screen -->
     <string name="login_hint">Login</string>
     <string name="password_hint">Password</string>
@@ -18,4 +19,9 @@
     <string name="network_error">Network error</string>
     <string name="forbidden_error">Access forbidden</string>
     <string name="unknown_error">Unknown error</string>
+
+    <string name="logout_dialog_title">Log out</string>
+    <string name="logout_dialog_message">Are you sure you want to log out?</string>
+    <string name="logout_dialog_confirm">Log out</string>
+    <string name="logout_dialog_dismiss">Cancel</string>
 </resources>
