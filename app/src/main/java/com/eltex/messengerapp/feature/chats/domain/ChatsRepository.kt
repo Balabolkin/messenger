@@ -1,5 +1,6 @@
 package com.eltex.messengerapp.feature.chats.domain
 
+import com.eltex.messengerapp.feature.chats.data.MessageDto
 import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
 import kotlinx.coroutines.flow.Flow
 
@@ -10,4 +11,6 @@ interface ChatsRepository {
     fun startRealtimeUpdates()
     fun stopRealtimeUpdates()
     suspend fun searchChats(query: String): List<SubscriptionDto>
+    fun subscribeToRoomMessages(roomId: String, callback: (MessageDto) -> Unit)
+    fun unsubscribeFromRoomMessages(roomId: String)
 }

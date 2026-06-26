@@ -19,7 +19,8 @@ data class AttachmentDto(
     val image_url: String? = null,
     val video_url: String? = null,
     val audio_url: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    val title_link: String? = null
 )
 
 @Serializable
@@ -51,6 +52,12 @@ data class SubscriptionDto(
 data class SubscriptionsResponse(
     val update: List<SubscriptionDto>? = null,
     val remove: List<SubscriptionDto>? = null,
+    val success: Boolean
+)
+
+@Serializable
+data class HistoryResponseDto(
+    val messages: List<MessageDto>,
     val success: Boolean
 )
 

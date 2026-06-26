@@ -4,9 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.eltex.messengerapp.feature.auth.ui.AuthScreenRoute
 import com.eltex.messengerapp.feature.main.MainScreen
 import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
+import com.eltex.messengerapp.feature.chat.ui.ChatScreen
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -48,6 +50,16 @@ fun Navigation(
                 }
             )
         }
+
+        composable<NavDestinations.Chat> { backStackEntry ->
+            val chatDest = backStackEntry.toRoute<NavDestinations.Chat>()
+            ChatScreen(
+                roomId = chatDest.roomId,
+                roomName = chatDest.roomName,
+                roomType = chatDest.roomType,
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -64,5 +76,12 @@ sealed interface NavDestinations {
 
     @Serializable
     object Profile
+
+    @Serializable
+    data class Chat(
+        val roomId: String,
+        val roomName: String,
+        val roomType: String
+    ) : NavDestinations
 }
 
