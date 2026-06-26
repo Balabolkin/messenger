@@ -1,12 +1,18 @@
 package com.eltex.messengerapp
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.eltex.messengerapp.feature.auth.ui.AuthScreenRoute
 import com.eltex.messengerapp.feature.main.MainScreen
 import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
+import com.eltex.messengerapp.feature.chat.ui.ChatScreen
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -19,7 +25,14 @@ fun Navigation(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable<NavDestinations.Main> {
+        composable<NavDestinations.Main>(
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+            }
+        ) {
             MainScreen(navController)
         }
 
@@ -48,6 +61,29 @@ fun Navigation(
                 }
             )
         }
+
+        composable<NavDestinations.Chat>(
+            enterTransition = {
+                slideInHorizontally(initialOffsetX = { it }) + fadeIn()
+            },
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+            },
+            popExitTransition = {
+                slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+            }
+        ) { backStackEntry ->
+            val chatDest = backStackEntry.toRoute<NavDestinations.Chat>()
+            ChatScreen(
+                roomId = chatDest.roomId,
+                roomName = chatDest.roomName,
+                roomType = chatDest.roomType,
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -64,5 +100,12 @@ sealed interface NavDestinations {
 
     @Serializable
     object Profile
+
+    @Serializable
+    data class Chat(
+        val roomId: String,
+        val roomName: String,
+        val roomType: String
+    ) : NavDestinations
 }
 

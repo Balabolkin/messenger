@@ -46,6 +46,8 @@ class ChatsRepositoryImpl @Inject constructor(
     private val _chatsFlow = MutableStateFlow<List<SubscriptionDto>>(emptyList())
     override val chatsFlow: Flow<List<SubscriptionDto>> = _chatsFlow.asStateFlow()
 
+    private val roomListeners = java.util.concurrent.ConcurrentHashMap<String, (MessageDto) -> Unit>()
+
     private var allSubscriptions = emptyList<SubscriptionDto>()
     private var currentPage = 0
     private var isPaginating = false
@@ -209,6 +211,15 @@ class ChatsRepositoryImpl @Inject constructor(
                                 handleRoomChange(action, data)
                             }
                         }
+                    } else if (ddpMsg.collection == "stream-room-messages") {
+                        val args = ddpMsg.fields?.args
+                        if (args != null && args.isNotEmpty()) {
+                            val messageDto = json.decodeFromJsonElement<MessageDto>(args[0])
+                            val roomId = messageDto.rid
+                            if (roomId != null) {
+                                roomListeners[roomId]?.invoke(messageDto)
+                            }
+                        }
                     }
                 }
             }
@@ -222,6 +233,12 @@ class ChatsRepositoryImpl @Inject constructor(
         webSocket?.send(subSubs)
         val subRooms = """{"msg":"sub","id":"sub-rooms","name":"stream-notify-user","params":["$userId/rooms-changed",false]}"""
         webSocket?.send(subRooms)
+        
+        // Re-subscribe to active room listeners on reconnection
+        roomListeners.keys.forEach { roomId ->
+            val subMsg = """{"msg":"sub","id":"sub-room-messages-$roomId","name":"stream-room-messages","params":["$roomId",false]}"""
+            webSocket?.send(subMsg)
+        }
     }
 
     private fun handleSubscriptionChange(action: String?, data: JsonElement) {
@@ -305,5 +322,17 @@ class ChatsRepositoryImpl @Inject constructor(
                 e.printStackTrace()
             }
         }
+    }
+
+    override fun subscribeToRoomMessages(roomId: String, callback: (MessageDto) -> Unit) {
+        roomListeners[roomId] = callback
+        val subMsg = """{"msg":"sub","id":"sub-room-messages-$roomId","name":"stream-room-messages","params":["$roomId",false]}"""
+        webSocket?.send(subMsg)
+    }
+
+    override fun unsubscribeFromRoomMessages(roomId: String) {
+        roomListeners.remove(roomId)
+        val unsubMsg = """{"msg":"unsub","id":"sub-room-messages-$roomId"}"""
+        webSocket?.send(unsubMsg)
     }
 }

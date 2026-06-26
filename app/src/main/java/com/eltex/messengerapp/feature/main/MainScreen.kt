@@ -101,7 +101,18 @@ fun MainScreen(
             when (tab) {
                 Tab.Chats -> {
                     val chatsViewModel: ChatsViewModel = hiltViewModel()
-                    ChatsScreen(viewModel = chatsViewModel)
+                    ChatsScreen(
+                        viewModel = chatsViewModel,
+                        onChatClick = { chat ->
+                            navController.navigate(
+                                NavDestinations.Chat(
+                                    roomId = chat.rid,
+                                    roomName = chat.fname ?: chat.name ?: "Чат",
+                                    roomType = chat.t
+                                )
+                            )
+                        }
+                    )
                 }
                 Tab.Profile -> ProfileScreen(
                     onLogout = {

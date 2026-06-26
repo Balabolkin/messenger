@@ -155,6 +155,7 @@ private fun getLastMessageText(chat: SubscriptionDto): String {
 @Composable
 fun ChatsScreen(
     viewModel: ChatsViewModel,
+    onChatClick: (SubscriptionDto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state
@@ -327,7 +328,7 @@ fun ChatsScreen(
                             ChatRowItem(
                                 chat = chat,
                                 currentUserId = state.currentUserId,
-                                onClick = { /* Visual only */ }
+                                onClick = { onChatClick(chat) }
                             )
                         }
 
