@@ -27,6 +27,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
@@ -114,10 +120,23 @@ fun ChatScreen(
     val state by viewModel.state.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
     var fullscreenVideoUrl by remember { mutableStateOf<String?>(null) }
     var messageText by remember { mutableStateOf("") }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                viewModel.loadMessages()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -256,7 +275,15 @@ fun ChatScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     } else {
+                        val lazyListState = rememberLazyListState()
+                        LaunchedEffect(state.messages.size) {
+                            if (lazyListState.firstVisibleItemIndex <= 1) {
+                                lazyListState.animateScrollToItem(0)
+                            }
+                        }
+
                         LazyColumn(
+                            state = lazyListState,
                             reverseLayout = true,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -287,7 +314,7 @@ fun ChatScreen(
                                     onImageClick = { url -> fullscreenImageUrl = url },
                                     onVideoClick = { url -> fullscreenVideoUrl = url },
                                     onDocClick = { attachment ->
-                                        val url = attachment.title_link ?: return@MessageBubbleRow
+                                        val url = attachment.title_link ?: attachment.audio_url ?: return@MessageBubbleRow
                                         val fileName = attachment.title ?: "file"
                                         viewModel.downloadAndOpenFile(context, url, fileName) { file ->
                                             openFile(context, file)
@@ -505,7 +532,7 @@ fun MessageBubbleRow(
                                     onClick = { onVideoClick(attachment.video_url) }
                                 )
                             }
-                            attachment.title_link != null -> {
+                            else -> {
                                 DocAttachmentBubble(
                                     attachment = attachment,
                                     downloadProgress = downloadProgress,
@@ -641,7 +668,7 @@ fun VideoAttachmentBubble(
 ) {
     Box(
         modifier = Modifier
-            .size((LocalConfiguration.current.screenWidthDp * 0.35f).dp)
+            .size((LocalConfiguration.current.screenWidthDp * 0.3f).dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Color.Black)
             .clickable { onClick() },
