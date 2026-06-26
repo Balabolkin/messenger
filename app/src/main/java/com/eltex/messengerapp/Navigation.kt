@@ -1,5 +1,9 @@
 package com.eltex.messengerapp
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,7 +25,14 @@ fun Navigation(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable<NavDestinations.Main> {
+        composable<NavDestinations.Main>(
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+            }
+        ) {
             MainScreen(navController)
         }
 
@@ -51,7 +62,20 @@ fun Navigation(
             )
         }
 
-        composable<NavDestinations.Chat> { backStackEntry ->
+        composable<NavDestinations.Chat>(
+            enterTransition = {
+                slideInHorizontally(initialOffsetX = { it }) + fadeIn()
+            },
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+            },
+            popExitTransition = {
+                slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+            }
+        ) { backStackEntry ->
             val chatDest = backStackEntry.toRoute<NavDestinations.Chat>()
             ChatScreen(
                 roomId = chatDest.roomId,
