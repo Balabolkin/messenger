@@ -88,6 +88,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.coil.compose)
     ksp(libs.hilt.compiler)
 
     implementation(platform(libs.ktor.bom))

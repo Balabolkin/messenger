@@ -30,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -42,6 +43,9 @@ import androidx.navigation.compose.rememberNavController
 import com.eltex.messengerapp.NavDestinations
 import com.eltex.messengerapp.R
 import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.eltex.messengerapp.feature.chats.ui.ChatsScreen
+import com.eltex.messengerapp.feature.chats.ui.ChatsViewModel
 import com.eltex.messengerapp.ui.theme.BrandPrimary
 import com.eltex.messengerapp.ui.theme.MessengerAppTheme
 
@@ -63,9 +67,11 @@ fun MainScreen(
     Scaffold(
         bottomBar = {
             BottomAppBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
                 modifier = Modifier
-                    .fillMaxWidth(),
-                containerColor = Color.White
+                    .fillMaxWidth()
+                    .shadow(elevation = 8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -88,9 +94,15 @@ fun MainScreen(
             }
         }
     ) { insets ->
-        Crossfade(modifier = Modifier.padding(insets), targetState = selectedTab) { tab ->
+        Crossfade(
+            modifier = Modifier.padding(bottom = insets.calculateBottomPadding()),
+            targetState = selectedTab
+        ) { tab ->
             when (tab) {
-                Tab.Chats -> Unit
+                Tab.Chats -> {
+                    val chatsViewModel: ChatsViewModel = hiltViewModel()
+                    ChatsScreen(viewModel = chatsViewModel)
+                }
                 Tab.Profile -> ProfileScreen(
                     onLogout = {
                         navController.navigate(NavDestinations.Auth) {
@@ -98,7 +110,6 @@ fun MainScreen(
                         }
                     }
                 )
-
             }
         }
 

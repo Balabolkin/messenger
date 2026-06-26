@@ -32,6 +32,7 @@ navigationCompose = "2.9.8"
 ksp = "2.3.7"
 material3 = "1.4.0"
 foundationLayout = "1.11.3"
+coilCompose = "2.6.0"
 
 [libraries]
 ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktorBom" }
@@ -76,6 +77,7 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
