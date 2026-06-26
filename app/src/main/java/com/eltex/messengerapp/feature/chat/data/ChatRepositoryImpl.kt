@@ -49,7 +49,12 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun loadHistory(roomId: String, roomType: String) {
-        val endpoint = "api/v1/rooms.history"
+        val endpoint = when (roomType) {
+            "d" -> "api/v1/im.history"
+            "c" -> "api/v1/channels.history"
+            "p" -> "api/v1/groups.history"
+            else -> "api/v1/channels.history"
+        }
 
         val response: HttpResponse = client.get(endpoint) {
             parameter("roomId", roomId)

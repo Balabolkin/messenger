@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -119,25 +120,54 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = if (roomType == "d") Alignment.CenterHorizontally else Alignment.Start
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = roomName,
-                            color = Color.White,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (roomType != "d") {
-                            Text(
-                                text = "Участники: 32", // Mock value as per mockup designs
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Normal
+                        // Room Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                        ) {
+                            val avatarUrl = if (roomType == "d") {
+                                "https://study-chat.eltex-co.ru/avatar/$roomName"
+                            } else {
+                                "https://study-chat.eltex-co.ru/avatar/room/$roomId"
+                            }
+                            SubcomposeAsyncImage(
+                                model = avatarUrl,
+                                contentDescription = roomName,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                error = {
+                                    InitialsAvatar(name = roomName)
+                                },
+                                loading = {
+                                    InitialsAvatar(name = roomName)
+                                }
                             )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                text = roomName,
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (roomType != "d") {
+                                Text(
+                                    text = "Участники: 32",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
                         }
                     }
                 },
@@ -151,17 +181,12 @@ fun ChatScreen(
                     }
                 },
                 actions = {
-                    // Placeholder spacing or user options button
-                    if (roomType == "d") {
-                        Spacer(modifier = Modifier.width(48.dp))
-                    } else {
-                        IconButton(onClick = {}) {
-                            Icon(
-                                painter = painterResource(R.drawable.arrow_forward), // placeholder / info icon
-                                contentDescription = "Информация",
-                                tint = Color.Transparent
-                            )
-                        }
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Меню",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -212,7 +237,7 @@ fun ChatScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(BrandMinor)
+                        .background(Color.White)
                 ) {
                     if (state.isLoading && state.messages.isEmpty()) {
                         CircularProgressIndicator(
@@ -279,50 +304,48 @@ fun ChatScreen(
                 }
 
                 // Message Input Area (Visual mockup as per task description)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = { messageText = it },
+                    placeholder = {
+                        Text(
+                            text = "Текст сообщения",
+                            color = AppColors.TextSecondary,
+                            fontSize = 15.sp
+                        )
+                    },
+                    trailingIcon = {
+                        if (messageText.isBlank()) {
+                            IconButton(onClick = {}) {
+                                Icon(
+                                    imageVector = Icons.Default.Attachment,
+                                    contentDescription = "Прикрепить",
+                                    tint = BrandPrimary
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = { messageText = "" }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.Send,
+                                    contentDescription = "Отправить",
+                                    tint = BrandPrimary
+                                )
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFFF5F5F5),
+                        unfocusedContainerColor = Color(0xFFF5F5F5),
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White)
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            imageVector = Icons.Default.Attachment,
-                            contentDescription = "Прикрепить",
-                            tint = BrandPrimary
-                        )
-                    }
-
-                    OutlinedTextField(
-                        value = messageText,
-                        onValueChange = { messageText = it },
-                        placeholder = {
-                            Text(
-                                text = "Текст сообщения",
-                                color = AppColors.TextSecondary,
-                                fontSize = 15.sp
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
-                        ),
-                        modifier = Modifier.weight(1f),
-                        maxLines = 5,
-                        textStyle = TextStyle(color = Color.Black, fontSize = 16.sp)
-                    )
-
-                    if (messageText.isNotBlank()) {
-                        IconButton(onClick = { messageText = "" }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Send,
-                                contentDescription = "Отправить",
-                                tint = BrandPrimary
-                            )
-                        }
-                    }
-                }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    maxLines = 5,
+                    textStyle = TextStyle(color = Color.Black, fontSize = 16.sp)
+                )
             }
 
             // Fullscreen Image Viewer
