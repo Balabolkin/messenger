@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -310,6 +312,7 @@ fun ChatScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White)
+                        .imePadding()
                 ) {
                     Box(
                         modifier = Modifier
@@ -333,20 +336,11 @@ fun ChatScreen(
                             decorationBox = { innerTextField ->
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     if (messageText.isEmpty()) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .width(1.5.dp)
-                                                    .height(18.dp)
-                                                    .background(Color(0xFFD1D1D6))
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "Текст сообщения",
-                                                color = Color(0xFFC7C7CC),
-                                                fontSize = 16.sp
-                                            )
-                                        }
+                                        Text(
+                                            text = "Текст сообщения",
+                                            color = Color(0xFFC7C7CC),
+                                            fontSize = 16.sp
+                                        )
                                     }
                                     innerTextField()
                                 }
@@ -355,30 +349,51 @@ fun ChatScreen(
 
                         Spacer(modifier = Modifier.width(12.dp))
 
-                        if (messageText.isBlank()) {
-                            IconButton(
-                                onClick = {},
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AttachFile,
-                                    contentDescription = "Прикрепить",
-                                    tint = BrandPrimary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        } else {
-                            IconButton(
-                                onClick = { messageText = "" },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Outlined.Send,
-                                    contentDescription = "Отправить",
-                                    tint = BrandPrimary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                        IconButton(
+                            onClick = {},
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = "Прикрепить",
+                                tint = BrandPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = {},
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Голосовое сообщение",
+                                tint = BrandPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(BrandPrimary, CircleShape)
+                                .clickable {
+                                    if (messageText.isNotBlank()) {
+                                        messageText = ""
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Send,
+                                contentDescription = "Отправить",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
