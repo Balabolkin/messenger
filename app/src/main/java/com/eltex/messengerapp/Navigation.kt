@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.eltex.messengerapp.feature.auth.ui.AuthScreenRoute
 import com.eltex.messengerapp.feature.main.MainScreen
+import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -39,7 +40,13 @@ fun Navigation(
         }
 
         composable<NavDestinations.Profile> {
-
+            ProfileScreen(
+                onLogout = {
+                    navController.navigate(NavDestinations.Auth) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }

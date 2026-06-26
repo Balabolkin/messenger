@@ -39,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.eltex.messengerapp.NavDestinations
 import com.eltex.messengerapp.R
+import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
 import com.eltex.messengerapp.ui.theme.BrandPrimary
 import com.eltex.messengerapp.ui.theme.MessengerAppTheme
 
@@ -62,7 +64,8 @@ fun MainScreen(
         bottomBar = {
             BottomAppBar(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                containerColor = Color.White
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -88,7 +91,14 @@ fun MainScreen(
         Crossfade(modifier = Modifier.padding(insets), targetState = selectedTab) { tab ->
             when (tab) {
                 Tab.Chats -> Unit
-                Tab.Profile -> Unit
+                Tab.Profile -> ProfileScreen(
+                    onLogout = {
+                        navController.navigate(NavDestinations.Auth) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+
             }
         }
 
