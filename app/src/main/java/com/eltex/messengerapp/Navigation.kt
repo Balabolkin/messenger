@@ -13,6 +13,7 @@ import com.eltex.messengerapp.feature.auth.ui.AuthScreenRoute
 import com.eltex.messengerapp.feature.main.MainScreen
 import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
 import com.eltex.messengerapp.feature.chat.ui.ChatScreen
+import com.eltex.messengerapp.feature.chats.creation.dm.ui.DmCreationBottomSheet
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -84,6 +85,23 @@ fun Navigation(
                 onBack = { navController.popBackStack() }
             )
         }
+
+        composable<NavDestinations.CreateChat> {
+            DmCreationBottomSheet(
+                onDismiss = { navController.navigateUp() },
+                onOpenChat = { chatId, chatName ->
+                    navController.navigate(
+                        NavDestinations.Chat(
+                            chatId,
+                            chatName,
+                            "d"
+                        )
+                    ) {
+                        popUpTo(NavDestinations.CreateChat) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -107,5 +125,8 @@ sealed interface NavDestinations {
         val roomName: String,
         val roomType: String
     ) : NavDestinations
+
+    @Serializable
+    object CreateChat
 }
 

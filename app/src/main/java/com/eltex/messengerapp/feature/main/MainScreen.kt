@@ -111,9 +111,13 @@ fun MainScreen(
                                     roomType = chat.t
                                 )
                             )
+                        },
+                        onCreateChatClick = {
+                            navController.navigate(NavDestinations.CreateChat)
                         }
                     )
                 }
+
                 Tab.Profile -> ProfileScreen(
                     onLogout = {
                         navController.navigate(NavDestinations.Auth) {
