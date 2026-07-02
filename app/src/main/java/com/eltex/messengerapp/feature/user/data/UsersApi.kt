@@ -1,6 +1,5 @@
 package com.eltex.messengerapp.feature.user.data
 
-import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -41,7 +40,6 @@ class UsersApi @Inject constructor(
             url("api/v1/users.list")
             parameter("count", 20)
         }
-        val body = response.body<String>()
         return response.body()
     }
 }

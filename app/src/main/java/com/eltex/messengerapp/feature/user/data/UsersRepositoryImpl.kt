@@ -1,6 +1,5 @@
 package com.eltex.messengerapp.feature.user.data
 
-import android.util.Log
 import com.eltex.messengerapp.feature.user.domain.User
 import com.eltex.messengerapp.feature.user.domain.UsersRepository
 import com.eltex.messengerapp.util.Result
