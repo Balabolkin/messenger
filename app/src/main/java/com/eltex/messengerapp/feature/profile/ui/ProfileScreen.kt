@@ -215,6 +215,7 @@ fun ProfileScreenPreview() {
             firstName = "Иван",
             lastName = "Иванов",
             patronymic = "Иванович",
+            username = "ivan.ivanovich",
             avatarUrl = null
         )
 
