@@ -18,6 +18,7 @@ data class UserEntity(
             id = _id,
             firstName = firstName ?: "",
             lastName = lastName ?: name ?: "",
+            username = username ?: "",
             avatarUrl = avatarUrl
         )
     }

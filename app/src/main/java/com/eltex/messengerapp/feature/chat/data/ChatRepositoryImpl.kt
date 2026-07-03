@@ -114,6 +114,7 @@ class ChatRepositoryImpl @Inject constructor(
     } catch (e: Exception) {
         e.printStackTrace()
     }
+}
 
     override suspend fun sendMessage(roomId: String, text: String) {
         val response: HttpResponse = client.post("api/v1/chat.postMessage") {
@@ -169,7 +170,7 @@ class ChatRepositoryImpl @Inject constructor(
             throw Exception("Failed to upload file: ${response.status}")
         }
     }
-}
+
     suspend fun clearMessagesForRoom(roomId: String) {
         messageDao.clearMessagesForRoom(roomId)
         _messagesState.update { current ->
