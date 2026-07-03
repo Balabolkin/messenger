@@ -8,6 +8,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +22,15 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.net.Uri
+import android.content.Context
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class PostMessageRequest(
+    val roomId: String,
+    val text: String
+)
 
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
@@ -74,6 +89,61 @@ class ChatRepositoryImpl @Inject constructor(
         } else {
             val errorBody = response.body<String>()
             throw Exception("Failed to load chat history: $errorBody")
+        }
+    }
+
+    override suspend fun sendMessage(roomId: String, text: String) {
+        val response: HttpResponse = client.post("api/v1/chat.postMessage") {
+            setBody(PostMessageRequest(roomId, text))
+        }
+        if (response.status.value != 200) {
+            throw Exception("Failed to send message: ${response.status}")
+        }
+    }
+
+    override suspend fun uploadFile(
+        roomId: String,
+        fileUri: Uri,
+        context: Context,
+        msg: String?,
+        description: String?
+    ) {
+        val contentResolver = context.contentResolver
+        var fileName = "file"
+        val cursor = contentResolver.query(fileUri, null, null, null, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    fileName = cursor.getString(nameIndex)
+                }
+            }
+            cursor.close()
+        }
+
+        val mimeType = contentResolver.getType(fileUri) ?: "application/octet-stream"
+        val bytes = contentResolver.openInputStream(fileUri)?.use { it.readBytes() }
+            ?: throw Exception("Cannot read file content")
+
+        val response: HttpResponse = client.post("api/v1/rooms.upload/$roomId") {
+            setBody(MultiPartFormDataContent(
+                formData {
+                    append("file", bytes, Headers.build {
+                        append(HttpHeaders.ContentType, mimeType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                    })
+                    if (msg != null) {
+                        append("msg", msg)
+                    }
+                    if (description != null) {
+                        append("description", description)
+                    }
+                }
+            ))
+        }
+
+        if (response.status.value != 200) {
+            throw Exception("Failed to upload file: ${response.status}")
         }
     }
 }

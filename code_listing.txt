@@ -1,0 +1,5025 @@
+﻿
+================================================================================
+FILE: .\settings.gradle.kts
+================================================================================
+
+pluginManagement {
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "MessengerApp"
+include(":app")
+ 
+
+================================================================================
+FILE: .\build.gradle.kts
+================================================================================
+
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.kotlinx.serialization) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.dagger.hilt) apply false
+}
+
+================================================================================
+FILE: .\app\build.gradle.kts
+================================================================================
+
+import java.util.Properties
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.dagger.hilt)
+}
+
+val secretPropertiesFile = rootProject.file("secrets.properties")
+val secretProperties = Properties()
+
+if (secretPropertiesFile.exists()) {
+    secretProperties.load(secretPropertiesFile.inputStream())
+}
+
+android {
+    namespace = "com.eltex.messengerapp"
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = "com.eltex.messengerapp"
+        minSdk = 24
+        targetSdk = 37
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val apiKey = secretProperties.getProperty("API_KEY", "")
+        val authorization = secretProperties.getProperty("Authorization", "")
+
+        buildConfigField("String", "API_KEY", "\"$apiKey\"")
+        buildConfigField("String", "Authorization", "\"$authorization\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField("boolean", "DEBUG", "true")
+        }
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            buildConfigField("boolean", "DEBUG", "false")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.foundation.layout)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.coil.compose)
+    ksp(libs.hilt.compiler)
+
+    implementation(platform(libs.ktor.bom))
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.json)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.logging.interceptor)
+    implementation(platform(libs.ktor.bom))
+
+    implementation(platform(libs.okhttp.bom))
+
+    implementation("androidx.datastore:datastore-preferences:1.1.0")
+
+    testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.junit)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+================================================================================
+FILE: .\app\src\main\AndroidManifest.xml
+================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".MessengerApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MessengerApp.Starting">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MessengerApp.Starting"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\MainActivity.kt
+================================================================================
+
+package com.eltex.messengerapp
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.eltex.messengerapp.feature.splash.SplashViewModel
+import com.eltex.messengerapp.ui.theme.MessengerAppTheme
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        setContent {
+            val splashViewModel: SplashViewModel = hiltViewModel()
+
+            val isReady by splashViewModel.isReady.collectAsStateWithLifecycle()
+            val startDestination by splashViewModel.startDestination.collectAsStateWithLifecycle()
+
+            splashScreen.setKeepOnScreenCondition {
+                !isReady
+            }
+
+            LaunchedEffect(Unit) {
+                splashViewModel.checkAuth()
+            }
+
+            MessengerAppTheme {
+                if (isReady) {
+                    startDestination?.let { destination ->
+                        Navigation(startDestination = destination)
+                    }
+                }
+            }
+//            Navigation(startDestination = NavDestinations.Main)
+        }
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\MessengerApplication.kt
+================================================================================
+
+package com.eltex.messengerapp
+
+import android.app.Application
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import dagger.hilt.android.HiltAndroidApp
+import okhttp3.OkHttpClient
+import javax.inject.Inject
+
+@HiltAndroidApp
+class MessengerApplication : Application(), ImageLoaderFactory {
+
+    @Inject
+    lateinit var okHttpClient: OkHttpClient
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .okHttpClient(okHttpClient)
+            .build()
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\Navigation.kt
+================================================================================
+
+package com.eltex.messengerapp
+
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.eltex.messengerapp.feature.auth.ui.AuthScreenRoute
+import com.eltex.messengerapp.feature.main.MainScreen
+import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
+import com.eltex.messengerapp.feature.chat.ui.ChatScreen
+import kotlinx.serialization.Serializable
+
+@Composable
+fun Navigation(
+    startDestination: Any
+) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        composable<NavDestinations.Main>(
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+            }
+        ) {
+            MainScreen(navController)
+        }
+
+        composable<NavDestinations.Auth> {
+
+            AuthScreenRoute(
+                onLoginSuccess = {
+                    navController.navigate(NavDestinations.Main) {
+                        popUpTo(NavDestinations.Auth) { inclusive = true }
+                    }
+                }
+            )
+
+        }
+
+        composable<NavDestinations.Chats> {
+
+        }
+
+        composable<NavDestinations.Profile> {
+            ProfileScreen(
+                onLogout = {
+                    navController.navigate(NavDestinations.Auth) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable<NavDestinations.Chat>(
+            enterTransition = {
+                slideInHorizontally(initialOffsetX = { it }) + fadeIn()
+            },
+            exitTransition = {
+                slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            },
+            popEnterTransition = {
+                slideInHorizontally(initialOffsetX = { -it }) + fadeIn()
+            },
+            popExitTransition = {
+                slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+            }
+        ) { backStackEntry ->
+            val chatDest = backStackEntry.toRoute<NavDestinations.Chat>()
+            ChatScreen(
+                roomId = chatDest.roomId,
+                roomName = chatDest.roomName,
+                roomType = chatDest.roomType,
+                onBack = { navController.popBackStack() }
+            )
+        }
+    }
+}
+
+@Serializable
+sealed interface NavDestinations {
+    @Serializable
+    object Main
+
+    @Serializable
+    object Auth
+
+    @Serializable
+    object Chats
+
+    @Serializable
+    object Profile
+
+    @Serializable
+    data class Chat(
+        val roomId: String,
+        val roomName: String,
+        val roomType: String
+    ) : NavDestinations
+}
+
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\datastore\AuthDataStore.kt
+================================================================================
+
+package com.eltex.messengerapp.datastore
+
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class AuthDataStore @Inject constructor(
+    private val dataStore: DataStore<Preferences>
+) {
+    suspend fun saveAuthData(token: String, userId: String) {
+        dataStore.edit { prefs ->
+            prefs[TOKEN_KEY] = token
+            prefs[USER_ID_KEY] = userId
+        }
+    }
+    suspend fun saveToken(token: String) {
+        dataStore.edit { prefs ->
+            prefs[TOKEN_KEY] = token
+        }
+    }
+
+    suspend fun saveUserId(userId: String) {
+        dataStore.edit { prefs ->
+            prefs[USER_ID_KEY] = userId
+        }
+    }
+
+    fun isLoggedIn(): Flow<Boolean> {
+        return dataStore.data.map { prefs ->
+            !prefs[TOKEN_KEY].isNullOrEmpty()
+        }
+    }
+
+    fun getToken(): Flow<String?> {
+        return dataStore.data.map { prefs ->
+            prefs[TOKEN_KEY]
+        }
+    }
+
+    fun getUserId(): Flow<String?> {
+        return dataStore.data.map { prefs ->
+            prefs[USER_ID_KEY]
+        }
+    }
+
+    suspend fun clear() {
+        dataStore.edit { prefs ->
+            prefs.remove(TOKEN_KEY)
+            prefs.remove(USER_ID_KEY)
+        }
+    }
+
+    suspend fun logout() {
+        clear()
+    }
+
+    companion object {
+        private val TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val USER_ID_KEY = stringPreferencesKey("user_id")
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\di\AuthModule.kt
+================================================================================
+
+package com.eltex.messengerapp.di
+
+import com.eltex.messengerapp.feature.auth.domain.AuthRepository
+import com.eltex.messengerapp.feature.auth.data.AuthRepositoryImpl
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ViewModelComponent
+
+@InstallIn(ViewModelComponent::class)
+@Module
+interface AuthModule {
+    @Binds
+    fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\di\ChatsModule.kt
+================================================================================
+
+package com.eltex.messengerapp.di
+
+import com.eltex.messengerapp.feature.chats.data.ChatsRepositoryImpl
+import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@InstallIn(SingletonComponent::class)
+@Module
+interface ChatsModule {
+    @Binds
+    @Singleton
+    fun bindChatsRepository(impl: ChatsRepositoryImpl): ChatsRepository
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\di\DataStoreModule.kt
+================================================================================
+
+package com.eltex.messengerapp.di
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+private val Context.datastore: DataStore<Preferences> by preferencesDataStore("auth")
+
+@Module
+@InstallIn(SingletonComponent::class)
+object DataStoreModule {
+    @Provides
+    @Singleton
+    fun provideDataStore(
+        @ApplicationContext context: Context
+    ): DataStore<Preferences> = context.datastore
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\di\NetworkModule.kt
+================================================================================
+
+package com.eltex.messengerapp.di
+
+import com.eltex.messengerapp.BuildConfig
+import com.eltex.messengerapp.domain.AppException
+import com.eltex.messengerapp.datastore.AuthDataStore
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.util.network.UnresolvedAddressException
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import java.net.UnknownHostException
+import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
+
+@InstallIn(SingletonComponent::class)
+@Module
+object NetworkModule {
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authDataStore: AuthDataStore): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                val requestBuilder = chain.request().newBuilder()
+                val token = runBlocking { authDataStore.getToken().first() }
+                val userId = runBlocking { authDataStore.getUserId().first() }
+                if (!token.isNullOrEmpty()) {
+                    requestBuilder.addHeader("X-Auth-Token", token)
+                }
+                if (!userId.isNullOrEmpty()) {
+                    requestBuilder.addHeader("X-User-Id", userId)
+                }
+                chain.proceed(requestBuilder.build())
+            }
+
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = if (BuildConfig.DEBUG) {
+                        HttpLoggingInterceptor.Level.BODY
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
+                }
+            )
+            .build()
+    }
+
+    @Singleton
+    @Provides
+    fun provideKtorHttpClient(okHttpClient: OkHttpClient) = HttpClient(OkHttp) {
+        engine {
+            preconfigured = okHttpClient
+        }
+
+        install(ContentNegotiation) {
+            json(
+                json = Json {
+                    ignoreUnknownKeys = true
+                }
+            )
+        }
+
+        install(Logging) {
+            level = if (BuildConfig.DEBUG) LogLevel.ALL else LogLevel.NONE
+            logger = io.ktor.client.plugins.logging.Logger.SIMPLE
+        }
+
+        expectSuccess = true
+
+        HttpResponseValidator {
+            handleResponseException {
+                when (it) {
+                    is ResponseException -> {
+                        when (it.response.status) {
+                            HttpStatusCode.Forbidden, HttpStatusCode.Unauthorized -> {
+                                throw AppException.Forbidden()
+                            }
+
+                            else -> throw AppException.UnknownException(
+                                it.response.status.value, it.message,
+                            )
+                        }
+                    }
+
+                    is UnresolvedAddressException, is UnknownHostException -> throw AppException.NetworkException()
+
+                    else -> throw it
+                }
+            }
+        }
+
+        defaultRequest {
+            url("https://study-chat.eltex-co.ru/")
+            contentType(ContentType.Application.Json)
+        }
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\di\ProfileRepositoryModule.kt
+================================================================================
+
+package com.eltex.messengerapp.di
+
+import com.eltex.messengerapp.feature.profile.data.ProfileRepositoryImpl
+import com.eltex.messengerapp.feature.profile.domain.ProfileRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ProfileRepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRepository(
+        impl: ProfileRepositoryImpl
+    ): ProfileRepository
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\domain\AppException.kt
+================================================================================
+
+package com.eltex.messengerapp.domain
+
+sealed class AppException(message: String? = null) : Exception(message) {
+    class NetworkException : AppException()
+    class Forbidden : AppException()
+    class UnknownException(val code: Int, message: String? = null) : AppException(message)
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\data\AuthRepositoryImpl.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.data
+
+import com.eltex.messengerapp.feature.auth.domain.AuthRepository
+import com.eltex.messengerapp.feature.auth.domain.AuthResult
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import kotlinx.serialization.Serializable
+import javax.inject.Inject
+
+@Serializable
+data class AuthResponse(
+    val status: String,
+    val data: AuthData
+)
+
+@Serializable
+data class AuthData(
+    val authToken: String,
+    val userId: String
+)
+class AuthRepositoryImpl @Inject constructor(
+    private val client: HttpClient,
+) : AuthRepository {
+
+    override suspend fun login(login: String, password: String): Result<AuthResult> {
+        return try {
+            val response: HttpResponse = client.post("api/v1/login")
+            {
+                setBody(mapOf(
+                    "user" to login,
+                    "password" to password
+                ))
+            }
+
+            if (response.status.value == 200) {
+                val authResponse: AuthResponse = response.body()
+                Result.success(AuthResult(
+                    authToken = authResponse.data.authToken,
+                    userId = authResponse.data.userId
+                )
+                )
+            } else {
+                val error = response.body<String>()
+                Result.failure(Exception(error))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\domain\AuthRepository.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.domain
+
+data class AuthResult(
+    val authToken: String,
+    val userId: String
+)
+interface AuthRepository {
+    suspend fun login(login: String, password: String): Result<AuthResult>
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\domain\Validation.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.domain
+
+sealed interface LoginError
+
+sealed interface PasswordError {
+    object TooShort : PasswordError
+}
+
+object Empty : PasswordError, LoginError
+
+fun validateLogin(login: CharSequence?): LoginError? =
+    if (login.isNullOrBlank()) {
+        Empty
+    } else {
+        null
+    }
+
+fun validatePassword(password: CharSequence?): PasswordError? =
+    when {
+        password.isNullOrBlank() -> Empty
+        password.length < 6 -> PasswordError.TooShort
+        else -> null
+    }
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\ui\AuthEffect.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.ui
+
+sealed interface AuthEffect {
+    data object ShowSuccess : AuthEffect
+    data class ShowError(val message: String) : AuthEffect
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\ui\AuthMessage.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.ui
+
+sealed interface AuthMessage {
+    data class LoginChanged(val value: String) : AuthMessage
+    data class PasswordChanged(val value: String) : AuthMessage
+    data object Submit : AuthMessage
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\ui\AuthScreen.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.ui
+
+import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.eltex.messengerapp.R
+import com.eltex.messengerapp.feature.auth.domain.Empty
+import com.eltex.messengerapp.feature.auth.domain.LoginError
+import com.eltex.messengerapp.feature.auth.domain.PasswordError
+import com.eltex.messengerapp.ui.theme.AppColors
+import com.eltex.messengerapp.ui.theme.MessengerAppTheme
+
+@Composable
+fun AuthScreenRoute(
+    modifier: Modifier = Modifier,
+    viewModel: AuthViewModel = hiltViewModel(),
+    onLoginSuccess: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                AuthEffect.ShowSuccess -> {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.login_success),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    onLoginSuccess()
+                }
+                is AuthEffect.ShowError -> {
+                    errorMessage = effect.message
+                    showErrorDialog = true
+                }
+            }
+        }
+    }
+
+    AuthScreen(
+        state = viewModel.state,
+        modifier = modifier,
+        onEvent = viewModel::accept,
+        showErrorDialog = showErrorDialog,
+        errorMessage = errorMessage,
+        onDismissError = { showErrorDialog = false }
+    )
+}
+
+@Composable
+fun AuthScreen(
+    state: AuthState,
+    modifier: Modifier = Modifier,
+    onEvent: (AuthMessage) -> Unit = {},
+    showErrorDialog: Boolean = false,
+    errorMessage: String = "",
+    onDismissError: () -> Unit = {},
+) {
+    var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
+    val isButtonEnabled = state.login.isNotBlank() && state.password.isNotBlank()
+    val shape = RoundedCornerShape(10.dp)
+
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
+        // 1. Фон
+        Image(
+            painter = painterResource(id = R.drawable.auth_background),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // 3. Контент
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Логотип
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo),
+                contentDescription = stringResource(R.string.app_name),
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(bottom = 32.dp),
+                contentScale = ContentScale.Fit
+            )
+
+            // Заголовок
+            Text(
+                text = stringResource(R.string.auth_title),
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 17.sp,
+                    lineHeight = 22.sp,
+                    letterSpacing = 0.sp,
+                    textAlign = TextAlign.Center
+                ),
+                color = AppColors.TextWhite,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            )
+
+            // Поле "Логин"
+            TextField(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                    //.height(36.dp),
+                value = state.login,
+                onValueChange = {
+                    onEvent(AuthMessage.LoginChanged(it))
+                },
+                isError = state.loginError != null,
+                singleLine = true,
+                label = {
+                    Text(
+                        text = stringResource(R.string.login_hint),
+//                        color = AppColors.InputLabel
+                    )
+                },
+//                supportingText = {
+//                    Text(state.loginError.toReadableString().orEmpty())
+//                },
+                shape = shape,
+                colors = TextFieldDefaults.colors(
+                    // Цвета контейнера
+                    focusedContainerColor = AppColors.InputBackground,
+                    unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
+                    disabledContainerColor = AppColors.InputBackgroundUnfocused,
+                    errorContainerColor = AppColors.ErrorContainer,
+
+                    // Цвета текста
+                    focusedTextColor = AppColors.InputText,
+                    unfocusedTextColor = AppColors.InputText,
+                    disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
+                    errorTextColor = AppColors.Error,
+
+                    // Цвета label (плейсхолдер)
+                    focusedLabelColor = AppColors.InputLabel,
+                    unfocusedLabelColor = AppColors.InputLabel,
+                    disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorLabelColor = AppColors.Error,
+
+                    // Цвета supporting text (текст ошибки)
+                    focusedSupportingTextColor = AppColors.InputLabel,
+                    unfocusedSupportingTextColor = AppColors.InputLabel,
+                    disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorSupportingTextColor = AppColors.Error,
+
+                    // Цвета курсора
+                    cursorColor = AppColors.InputLabel,
+                    errorCursorColor = AppColors.Error,
+                )
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Поле "Пароль"
+            TextField(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                    //.height(36.dp),
+                value = state.password,
+                onValueChange = {
+                    onEvent(AuthMessage.PasswordChanged(it))
+                },
+                isError = state.passwordError != null,
+                singleLine = true,
+                visualTransformation = if (isPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                label = {
+                    Text(
+                        text = stringResource(R.string.password_hint),
+//                        color = AppColors.InputLabel
+                    )
+                },
+                supportingText = {
+                    Text(state.passwordError.toReadableString().orEmpty())
+                },
+                shape = shape,
+                trailingIcon = {
+                    val icon = if (isPasswordVisible) {
+                        Icons.Filled.VisibilityOff
+                    } else {
+                        Icons.Filled.Visibility
+                    }
+
+                    val description = if (isPasswordVisible) {
+                        stringResource(R.string.hide_password_description)
+                    } else {
+                        stringResource(R.string.show_password_description)
+                    }
+
+                    IconButton(
+                        onClick = { isPasswordVisible = !isPasswordVisible }
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = description,
+                            tint = AppColors.TextWhite
+                        )
+                    }
+                },
+                colors = TextFieldDefaults.colors(
+                    // Цвета контейнера
+                    focusedContainerColor = AppColors.InputBackground,
+                    unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
+                    disabledContainerColor = AppColors.InputBackgroundUnfocused,
+                    errorContainerColor = AppColors.ErrorContainer,
+
+                    // Цвета текста
+                    focusedTextColor = AppColors.InputText,
+                    unfocusedTextColor = AppColors.InputText,
+                    disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
+                    errorTextColor = AppColors.Error,
+
+                    // Цвета label (плейсхолдер)
+                    focusedLabelColor = AppColors.InputLabel,
+                    unfocusedLabelColor = AppColors.InputLabel,
+                    disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorLabelColor = AppColors.Error,
+
+                    // Цвета supporting text (текст ошибки)
+                    focusedSupportingTextColor = AppColors.InputLabel,
+                    unfocusedSupportingTextColor = AppColors.InputLabel,
+                    disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                    errorSupportingTextColor = AppColors.Error,
+
+                    // Цвета курсора
+                    cursorColor = AppColors.InputLabel,
+                    errorCursorColor = AppColors.Error,
+                )
+            )
+
+
+    }
+        // Кнопка "Войти"
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .padding(horizontal = 32.dp)
+                .padding(bottom = 32.dp)
+                .align(Alignment.BottomCenter),
+            onClick = {
+                onEvent(AuthMessage.Submit)
+            },
+            enabled = isButtonEnabled,
+            shape = shape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AppColors.ButtonEnabled,
+                contentColor = AppColors.ButtonTextEnabled,
+                disabledContainerColor = AppColors.ButtonDisabled,
+                disabledContentColor = AppColors.ButtonTextDisabled
+            )
+        ) {
+            Text(
+                text = stringResource(R.string.login),
+                color = if (isButtonEnabled) {
+                    AppColors.ButtonTextEnabled
+                } else {
+                    AppColors.ButtonTextDisabled
+                }
+            )
+        }
+
+    // AlertDialog для ошибок
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = onDismissError,
+            title = { Text(text = "Ошибка") },
+            text = { Text(text = errorMessage) },
+            confirmButton = {
+                TextButton(onClick = onDismissError) {
+                    Text("Ок")
+                }
+            }
+        )
+    }
+}
+}
+
+@Composable
+fun LoginError?.toReadableString(): String? = when (this) {
+    Empty -> stringResource(R.string.login_empty_error)
+    null -> null
+}
+
+@Composable
+fun PasswordError?.toReadableString(): String? = when (this) {
+    Empty -> stringResource(R.string.password_empty_error)
+    PasswordError.TooShort -> stringResource(R.string.password_too_short_error)
+    null -> null
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AuthScreenEmptyPreview() {
+    MessengerAppTheme {
+        AuthScreen(AuthState())
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AuthScreenEmptyErrorPreview() {
+    MessengerAppTheme {
+        AuthScreen(
+            AuthState(loginError = Empty, passwordError = Empty)
+        )
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\ui\AuthState.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.ui
+
+import com.eltex.messengerapp.feature.auth.domain.LoginError
+import com.eltex.messengerapp.feature.auth.domain.PasswordError
+
+data class AuthState(
+    val login: String = "",
+    val password: String = "",
+    val loginError: LoginError? = null,
+    val passwordError: PasswordError? = null,
+)
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\auth\ui\AuthViewModel.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.auth.ui
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.eltex.messengerapp.feature.auth.domain.AuthRepository
+import com.eltex.messengerapp.feature.auth.domain.validateLogin
+import com.eltex.messengerapp.feature.auth.domain.validatePassword
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import com.eltex.messengerapp.datastore.AuthDataStore
+
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val repository: AuthRepository,
+    private val authDataStore: AuthDataStore
+) : ViewModel() {
+
+    var state by mutableStateOf(AuthState())
+        private set
+
+    private val _effects = MutableSharedFlow<AuthEffect>(
+        extraBufferCapacity = 1
+    )
+    val effects = _effects.asSharedFlow()
+
+    fun accept(message: AuthMessage) {
+        when (message) {
+            is AuthMessage.LoginChanged -> {
+                state = state.copy(login = message.value, loginError = null)
+            }
+
+            is AuthMessage.PasswordChanged -> {
+                state = state.copy(password = message.value, passwordError = null)
+            }
+
+            AuthMessage.Submit -> {
+                val loginError = validateLogin(state.login)
+                val passwordError = validatePassword(state.password)
+
+                state = state.copy(
+                    loginError = loginError,
+                    passwordError = passwordError
+                )
+
+                if (loginError == null && passwordError == null) {
+                    viewModelScope.launch {
+                        val result = repository.login(state.login, state.password)
+                        result.fold(
+                            onSuccess = { authResult ->
+                                authDataStore.saveAuthData(
+                                    token = authResult.authToken,
+                                    userId = authResult.userId
+                                )
+                                _effects.tryEmit(AuthEffect.ShowSuccess)
+                            },
+                            onFailure = { error ->
+                                val message = handleError(error)
+                                _effects.tryEmit(AuthEffect.ShowError(message))
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+    private fun handleError(error: Throwable): String {
+        return when (error) {
+            is java.net.UnknownHostException,
+            is java.net.ConnectException,
+            is java.net.SocketTimeoutException,
+            is java.io.IOException -> {
+                "Отсутствует соединение с сервером, проверьте ваше интернет соединение и повторите позднее"
+            }
+
+            else -> {
+                if (error.message?.contains("401") == true ||
+                    error.message?.contains("403") == true
+                ) {
+                    "Неправильный логин или пароль"
+                } else {
+                    error.message ?: "Неизвестная ошибка"
+                }
+            }
+        }
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chat\data\ChatRepositoryImpl.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chat.data
+
+import com.eltex.messengerapp.feature.chat.domain.ChatRepository
+import com.eltex.messengerapp.feature.chats.data.HistoryResponseDto
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.update
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ChatRepositoryImpl @Inject constructor(
+    private val client: HttpClient,
+    private val chatsRepository: ChatsRepository
+) : ChatRepository {
+
+    private val _messagesState = MutableStateFlow<Map<String, List<MessageDto>>>(emptyMap())
+
+    override fun getMessagesFlow(roomId: String, roomType: String): Flow<List<MessageDto>> {
+        return channelFlow {
+            chatsRepository.subscribeToRoomMessages(roomId) { newMessage ->
+                _messagesState.update { current ->
+                    val roomMsgs = current[roomId] ?: emptyList()
+                    val index = roomMsgs.indexOfFirst { it._id == newMessage._id }
+                    val updated = if (index != -1) {
+                        roomMsgs.toMutableList().apply { this[index] = newMessage }
+                    } else {
+                        listOf(newMessage) + roomMsgs
+                    }
+                    current + (roomId to updated)
+                }
+            }
+
+            _messagesState.collect { map ->
+                send(map[roomId] ?: emptyList())
+            }
+        }.onCompletion {
+            chatsRepository.unsubscribeFromRoomMessages(roomId)
+        }
+    }
+
+    override suspend fun loadHistory(roomId: String, roomType: String) {
+        val endpoint = when (roomType) {
+            "d" -> "api/v1/im.history"
+            "c" -> "api/v1/channels.history"
+            "p" -> "api/v1/groups.history"
+            else -> "api/v1/channels.history"
+        }
+
+        val response: HttpResponse = client.get(endpoint) {
+            parameter("roomId", roomId)
+            parameter("count", 100)
+        }
+
+        if (response.status.value == 200) {
+            val historyResponse: HistoryResponseDto = response.body()
+            if (historyResponse.success) {
+                val messages = historyResponse.messages
+                _messagesState.update { current ->
+                    current + (roomId to messages)
+                }
+            } else {
+                throw Exception("Failed to load chat history")
+            }
+        } else {
+            val errorBody = response.body<String>()
+            throw Exception("Failed to load chat history: $errorBody")
+        }
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chat\di\ChatModule.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chat.di
+
+import com.eltex.messengerapp.feature.chat.data.ChatRepositoryImpl
+import com.eltex.messengerapp.feature.chat.domain.ChatRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@InstallIn(SingletonComponent::class)
+@Module
+interface ChatModule {
+    @Binds
+    @Singleton
+    fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chat\domain\ChatRepository.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chat.domain
+
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+import kotlinx.coroutines.flow.Flow
+
+interface ChatRepository {
+    fun getMessagesFlow(roomId: String, roomType: String): Flow<List<MessageDto>>
+    suspend fun loadHistory(roomId: String, roomType: String)
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chat\ui\ChatScreen.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chat.ui
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.MediaController
+import android.widget.Toast
+import android.widget.VideoView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.FileProvider
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import com.eltex.messengerapp.R
+import com.eltex.messengerapp.feature.chats.data.AttachmentDto
+import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+import com.eltex.messengerapp.feature.chats.ui.ChatsDateFormatter
+import com.eltex.messengerapp.feature.chats.ui.InitialsAvatar
+import com.eltex.messengerapp.ui.theme.AppColors
+import com.eltex.messengerapp.ui.theme.BrandDark
+import com.eltex.messengerapp.ui.theme.BrandMinor
+import com.eltex.messengerapp.ui.theme.BrandPrimary
+import kotlinx.serialization.json.JsonElement
+import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatScreen(
+    roomId: String,
+    roomName: String,
+    roomType: String,
+    onBack: () -> Unit,
+    viewModel: ChatViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    val currentUserId by viewModel.currentUserId.collectAsState()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
+    var fullscreenVideoUrl by remember { mutableStateOf<String?>(null) }
+    var messageText by remember { mutableStateOf("") }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                viewModel.loadMessages()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Room Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                        ) {
+                            val avatarUrl = if (roomType == "d") {
+                                "https://study-chat.eltex-co.ru/avatar/$roomName"
+                            } else {
+                                "https://study-chat.eltex-co.ru/avatar/room/$roomId"
+                            }
+                            SubcomposeAsyncImage(
+                                model = avatarUrl,
+                                contentDescription = roomName,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                                error = {
+                                    InitialsAvatar(name = roomName)
+                                },
+                                loading = {
+                                    InitialsAvatar(name = roomName)
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                text = roomName,
+                                color = Color.White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (roomType != "d") {
+                                Text(
+                                    text = "Участники: 32",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
+                        }
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronLeft,
+                            contentDescription = "Назад",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.MoreHoriz,
+                            contentDescription = "Меню",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BrandDark
+                )
+            )
+        },
+        containerColor = Color.White
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Error Banner
+                AnimatedVisibility(
+                    visible = state.error != null,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    state.error?.let { errorMsg ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFFFEBEE))
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clickable { viewModel.clearError() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Ошибка",
+                                tint = Color.Red
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = errorMsg,
+                                color = Color.Red,
+                                fontSize = 14.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                // Messages List
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color.White)
+                ) {
+                    if (state.isLoading && state.messages.isEmpty()) {
+                        CircularProgressIndicator(
+                            color = BrandPrimary,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else if (state.messages.isEmpty()) {
+                        Text(
+                            text = "Сообщений нет",
+                            color = AppColors.TextSecondary,
+                            fontSize = 16.sp,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        val lazyListState = rememberLazyListState()
+                        LaunchedEffect(state.messages.size) {
+                            if (lazyListState.firstVisibleItemIndex <= 1) {
+                                lazyListState.animateScrollToItem(0)
+                            }
+                        }
+
+                        LazyColumn(
+                            state = lazyListState,
+                            reverseLayout = true,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Empty spacing at the bottom
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+                            itemsIndexed(
+                                items = state.messages,
+                                key = { _, msg -> msg._id }
+                            ) { index, msg ->
+                                val isMyMessage = msg.u?._id == currentUserId
+                                
+                                // Determine grouping for other's messages
+                                val showSenderInfo = if (roomType != "d" && !isMyMessage) {
+                                    index == state.messages.size - 1 ||
+                                            state.messages[index + 1].u?._id != msg.u?._id ||
+                                            isDifferentDay(msg.ts, state.messages[index + 1].ts)
+                                } else false
+
+                                MessageBubbleRow(
+                                    message = msg,
+                                    isMyMessage = isMyMessage,
+                                    showSenderInfo = showSenderInfo,
+                                    downloadProgress = state.downloadingFiles[msg.attachments?.firstOrNull()?.title_link ?: msg.attachments?.firstOrNull()?.video_url],
+                                    onImageClick = { url -> fullscreenImageUrl = url },
+                                    onVideoClick = { url -> fullscreenVideoUrl = url },
+                                    onDocClick = { attachment ->
+                                        val url = attachment.title_link ?: attachment.audio_url ?: return@MessageBubbleRow
+                                        val fileName = attachment.title ?: "file"
+                                        viewModel.downloadAndOpenFile(context, url, fileName) { file ->
+                                            openFile(context, file)
+                                        }
+                                    }
+                                )
+
+                                // Insert date header if day changes
+                                if (index == state.messages.size - 1 || isDifferentDay(msg.ts, state.messages[index + 1].ts)) {
+                                    DateHeaderItem(msg.ts)
+                                }
+                            }
+
+                            // Empty spacing at the top
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
+                        }
+                    }
+                }
+
+                // Message Input Area (Visual mockup as per task description)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .imePadding()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFEFEFEF))
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        BasicTextField(
+                            value = messageText,
+                            onValueChange = { messageText = it },
+                            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(vertical = 12.dp),
+                            decorationBox = { innerTextField ->
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    if (messageText.isEmpty()) {
+                                        Text(
+                                            text = "Текст сообщения",
+                                            color = Color(0xFFC7C7CC),
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        IconButton(
+                            onClick = {},
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = "Прикрепить",
+                                tint = BrandPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = {},
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Голосовое сообщение",
+                                tint = BrandPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(BrandPrimary, CircleShape)
+                                .clickable {
+                                    if (messageText.isNotBlank()) {
+                                        messageText = ""
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Send,
+                                contentDescription = "Отправить",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Fullscreen Image Viewer
+            fullscreenImageUrl?.let { imageUrl ->
+                FullscreenImageViewer(
+                    imageUrl = imageUrl,
+                    onDismiss = { fullscreenImageUrl = null }
+                )
+            }
+
+            // Fullscreen Video Player
+            fullscreenVideoUrl?.let { videoUrl ->
+                FullscreenVideoPlayer(
+                    videoUrl = videoUrl,
+                    onDismiss = { fullscreenVideoUrl = null }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MessageBubbleRow(
+    message: MessageDto,
+    isMyMessage: Boolean,
+    showSenderInfo: Boolean,
+    downloadProgress: Float?,
+    onImageClick: (String) -> Unit,
+    onVideoClick: (String) -> Unit,
+    onDocClick: (AttachmentDto) -> Unit
+) {
+    val senderName = message.u?.name ?: message.u?.username ?: "Пользователь"
+    val avatarUrl = "https://study-chat.eltex-co.ru/avatar/${message.u?.username}"
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (isMyMessage) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        if (!isMyMessage) {
+            if (showSenderInfo) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                ) {
+                    SubcomposeAsyncImage(
+                        model = avatarUrl,
+                        contentDescription = senderName,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        error = {
+                            InitialsAvatar(name = senderName)
+                        },
+                        loading = {
+                            InitialsAvatar(name = senderName)
+                        }
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.width(36.dp))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        Column(
+            modifier = Modifier.widthIn(max = (LocalConfiguration.current.screenWidthDp * 0.7f).dp)
+        ) {
+            if (showSenderInfo) {
+                Text(
+                    text = senderName,
+                    color = BrandPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 2.dp)
+                )
+            }
+
+            val bubbleShape = if (isMyMessage) {
+                RoundedCornerShape(12.dp, 12.dp, 0.dp, 12.dp)
+            } else {
+                RoundedCornerShape(12.dp, 12.dp, 12.dp, 0.dp)
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(bubbleShape)
+                    .background(if (isMyMessage) Color(0xFFE1F5FE) else Color(0xFFF5F5F5))
+            ) {
+                Column {
+                    // Check for attachments first
+                    val attachment = message.attachments?.firstOrNull()
+                    if (attachment != null) {
+                        when {
+                            attachment.image_url != null -> {
+                                ImageAttachmentBubble(
+                                    attachment = attachment,
+                                    hasText = !message.msg.isNullOrBlank(),
+                                    onClick = { onImageClick(attachment.image_url) }
+                                )
+                            }
+                            attachment.video_url != null -> {
+                                VideoAttachmentBubble(
+                                    attachment = attachment,
+                                    downloadProgress = downloadProgress,
+                                    onClick = { onVideoClick(attachment.video_url) }
+                                )
+                            }
+                            else -> {
+                                DocAttachmentBubble(
+                                    attachment = attachment,
+                                    downloadProgress = downloadProgress,
+                                    onClick = { onDocClick(attachment) }
+                                )
+                            }
+                        }
+                    }
+
+                    // Message text
+                    if (!message.msg.isNullOrBlank()) {
+                        val annotatedText = parseClickableText(message.msg)
+                        val context = LocalContext.current
+                        
+                        ClickableText(
+                            text = annotatedText,
+                            onClick = { offset ->
+                                annotatedText.getStringAnnotations(start = offset, end = offset).firstOrNull()?.let { annotation ->
+                                    try {
+                                        val intent = when (annotation.tag) {
+                                            "URL" -> Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                                            "EMAIL" -> Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${annotation.item}"))
+                                            "PHONE" -> Intent(Intent.ACTION_DIAL, Uri.parse("tel:${annotation.item}"))
+                                            else -> null
+                                        }
+                                        intent?.let { context.startActivity(it) }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Не удалось открыть ссылку", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            style = TextStyle(color = Color.Black, fontSize = 15.sp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    // Time and delivery status
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(start = 8.dp, end = 8.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val tsTime = ChatsDateParser.parse(message.ts) ?: 0L
+                        val timeText = if (tsTime > 0L) {
+                            LocalDateTime.ofInstant(Instant.ofEpochMilli(tsTime), ZoneId.systemDefault())
+                                .format(DateTimeFormatter.ofPattern("HH:mm"))
+                        } else ""
+                        
+                        Text(
+                            text = timeText,
+                            fontSize = 11.sp,
+                            color = AppColors.TextSecondary.copy(alpha = 0.7f)
+                        )
+
+                        if (isMyMessage) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            val isRead = message.unread == false
+                            Icon(
+                                imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Check,
+                                contentDescription = null,
+                                tint = if (isRead) Color(0xFF25CBA3) else AppColors.TextSecondary.copy(alpha = 0.5f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ImageAttachmentBubble(
+    attachment: AttachmentDto,
+    hasText: Boolean,
+    onClick: () -> Unit
+) {
+    val fullUrl = if (attachment.image_url?.startsWith("http") == true) {
+        attachment.image_url
+    } else {
+        "https://study-chat.eltex-co.ru${attachment.image_url}"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(
+                if (hasText) {
+                    RoundedCornerShape(12.dp, 12.dp, 0.dp, 0.dp)
+                } else {
+                    RoundedCornerShape(12.dp)
+                }
+            )
+            .clickable { onClick() }
+    ) {
+        SubcomposeAsyncImage(
+            model = fullUrl,
+            contentDescription = attachment.title ?: "Изображение",
+            modifier = Modifier.fillMaxWidth(),
+            contentScale = ContentScale.FillWidth,
+            loading = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            },
+            error = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = Icons.Default.Warning, contentDescription = "Ошибка", tint = Color.Gray)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun VideoAttachmentBubble(
+    attachment: AttachmentDto,
+    downloadProgress: Float?,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size((LocalConfiguration.current.screenWidthDp * 0.3f).dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        // Play button
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(Color.White.copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Проиграть",
+                tint = Color.White,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+
+        // Optional Loader
+        if (downloadProgress != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    progress = { downloadProgress },
+                    color = BrandPrimary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DocAttachmentBubble(
+    attachment: AttachmentDto,
+    downloadProgress: Float?,
+    onClick: () -> Unit
+) {
+    val filename = attachment.title ?: "Документ"
+    
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (downloadProgress != null) {
+                CircularProgressIndicator(
+                    progress = { downloadProgress },
+                    color = BrandPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Description,
+                    contentDescription = "Файл",
+                    tint = BrandPrimary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = formatFileName(filename),
+            color = Color.Black,
+            fontSize = 15.sp,
+            maxLines = 1,
+            fontWeight = FontWeight.Medium,
+            overflow = TextOverflow.Clip,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+fun DateHeaderItem(ts: JsonElement?) {
+    val timestamp = ChatsDateParser.parse(ts) ?: return
+    
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = formatDateHeader(timestamp),
+            color = AppColors.TextSecondary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .background(Color(0xFFEFEFEF), RoundedCornerShape(12.dp))
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+fun FullscreenImageViewer(
+    imageUrl: String,
+    onDismiss: () -> Unit
+) {
+    val fullUrl = if (imageUrl.startsWith("http")) imageUrl else "https://study-chat.eltex-co.ru$imageUrl"
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        AsyncImage(
+            model = fullUrl,
+            contentDescription = "Изображение во весь экран",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Fit
+        )
+
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(16.dp)
+                .align(Alignment.TopStart)
+                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Закрыть",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun FullscreenVideoPlayer(
+    videoUrl: String,
+    onDismiss: () -> Unit
+) {
+    val fullUrl = if (videoUrl.startsWith("http")) videoUrl else "https://study-chat.eltex-co.ru$videoUrl"
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
+        AndroidView(
+            factory = { context ->
+                VideoView(context).apply {
+                    setVideoPath(fullUrl)
+                    val mediaController = MediaController(context)
+                    mediaController.setAnchorView(this)
+                    setMediaController(mediaController)
+                    setOnPreparedListener { start() }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(16.dp)
+                .align(Alignment.TopStart)
+                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Закрыть",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+fun formatFileName(fileName: String, maxLength: Int = 28): String {
+    if (fileName.length <= maxLength) return fileName
+    val extensionIndex = fileName.lastIndexOf('.')
+    val ext = if (extensionIndex != -1) fileName.substring(extensionIndex) else ""
+    val nameWithoutExt = if (extensionIndex != -1) fileName.substring(0, extensionIndex) else fileName
+
+    val extLen = ext.length
+    val availableLen = maxLength - extLen - 3
+    if (availableLen <= 2) return fileName
+
+    val startLen = availableLen / 2 + availableLen % 2
+    val endLen = availableLen / 2
+
+    val startPart = nameWithoutExt.take(startLen)
+    val endPart = nameWithoutExt.takeLast(endLen)
+
+    return "$startPart...$endPart$ext"
+}
+
+fun parseClickableText(text: String): AnnotatedString {
+    return buildAnnotatedString {
+        append(text)
+
+        val urlRegex = """https?://[^\s]+""".toRegex()
+        urlRegex.findAll(text).forEach { match ->
+            addStyle(
+                style = SpanStyle(
+                    color = BrandPrimary,
+                    textDecoration = TextDecoration.Underline
+                ),
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+            addStringAnnotation(
+                tag = "URL",
+                annotation = match.value,
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+        }
+
+        val emailRegex = """[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}""".toRegex()
+        emailRegex.findAll(text).forEach { match ->
+            addStyle(
+                style = SpanStyle(
+                    color = BrandPrimary,
+                    textDecoration = TextDecoration.Underline
+                ),
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+            addStringAnnotation(
+                tag = "EMAIL",
+                annotation = match.value,
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+        }
+
+        val phoneRegex = """\+?[78]\s?\(?\d{3}\)?\s?\d{3}[-\s]?\d{2}[-\s]?\d{2}""".toRegex()
+        phoneRegex.findAll(text).forEach { match ->
+            addStyle(
+                style = SpanStyle(
+                    color = BrandPrimary,
+                    textDecoration = TextDecoration.Underline
+                ),
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+            addStringAnnotation(
+                tag = "PHONE",
+                annotation = match.value,
+                start = match.range.first,
+                end = match.range.last + 1
+            )
+        }
+    }
+}
+
+fun isDifferentDay(ts1: JsonElement?, ts2: JsonElement?): Boolean {
+    val t1 = ChatsDateParser.parse(ts1) ?: return true
+    val t2 = ChatsDateParser.parse(ts2) ?: return true
+    val d1 = LocalDateTime.ofInstant(Instant.ofEpochMilli(t1), ZoneId.systemDefault()).toLocalDate()
+    val d2 = LocalDateTime.ofInstant(Instant.ofEpochMilli(t2), ZoneId.systemDefault()).toLocalDate()
+    return d1 != d2
+}
+
+fun formatDateHeader(timestamp: Long): String {
+    val instant = Instant.ofEpochMilli(timestamp)
+    val zoneId = ZoneId.systemDefault()
+    val date = LocalDateTime.ofInstant(instant, zoneId).toLocalDate()
+    val today = LocalDate.now(zoneId)
+    val yesterday = today.minusDays(1)
+
+    return when {
+        date == today -> "Сегодня"
+        date == yesterday -> "Вчера"
+        date.year == today.year -> {
+            val formatter = DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
+            date.format(formatter)
+        }
+        else -> {
+            val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+            date.format(formatter)
+        }
+    }
+}
+
+fun openFile(context: Context, file: File) {
+    try {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val mimeType = context.contentResolver.getType(uri) ?: "*/*"
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Не удалось открыть файл: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chat\ui\ChatState.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chat.ui
+
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+
+data class ChatState(
+    val messages: List<MessageDto> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val downloadingFiles: Map<String, Float?> = emptyMap() // Map of URL to progress (null if indeterminate loader)
+)
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chat\ui\ChatViewModel.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chat.ui
+
+import android.content.Context
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
+import com.eltex.messengerapp.NavDestinations
+import com.eltex.messengerapp.datastore.AuthDataStore
+import com.eltex.messengerapp.feature.chat.domain.ChatRepository
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import java.io.File
+import javax.inject.Inject
+
+@HiltViewModel
+class ChatViewModel @Inject constructor(
+    private val chatRepository: ChatRepository,
+    private val authDataStore: AuthDataStore,
+    private val okHttpClient: OkHttpClient,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val chatRoute = savedStateHandle.toRoute<NavDestinations.Chat>()
+    val roomId = chatRoute.roomId
+    val roomName = chatRoute.roomName
+    val roomType = chatRoute.roomType
+
+    private val _state = MutableStateFlow(ChatState())
+    val state: StateFlow<ChatState> = _state.asStateFlow()
+
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _currentUserId.value = authDataStore.getUserId().first()
+            loadMessages()
+        }
+    }
+
+    fun loadMessages() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                chatRepository.loadHistory(roomId, roomType)
+                _state.update { it.copy(isLoading = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+
+        viewModelScope.launch {
+            chatRepository.getMessagesFlow(roomId, roomType).collect { msgs ->
+                _state.update { it.copy(messages = msgs) }
+            }
+        }
+    }
+
+    fun clearError() {
+        _state.update { it.copy(error = null) }
+    }
+
+    fun downloadAndOpenFile(
+        context: Context,
+        url: String,
+        fileName: String,
+        onComplete: (File) -> Unit
+    ) {
+        if (_state.value.downloadingFiles.containsKey(url)) return
+
+        val cacheDir = context.cacheDir
+        val localFile = File(cacheDir, fileName)
+        if (localFile.exists()) {
+            onComplete(localFile)
+            return
+        }
+
+        _state.update { it.copy(downloadingFiles = it.downloadingFiles + (url to 0f)) }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val fullUrl = if (url.startsWith("http")) url else "https://study-chat.eltex-co.ru$url"
+                val request = okhttp3.Request.Builder().url(fullUrl).build()
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw Exception("Ошибка сервера: ${response.code}")
+                    val body = response.body ?: throw Exception("Тело ответа пустое")
+                    val contentLength = body.contentLength()
+
+                    body.byteStream().use { inputStream ->
+                        localFile.outputStream().use { outputStream ->
+                            val buffer = ByteArray(8192)
+                            var bytesRead: Int
+                            var totalBytesRead = 0L
+                            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                                outputStream.write(buffer, 0, bytesRead)
+                                totalBytesRead += bytesRead
+                                if (contentLength > 0) {
+                                    val progress = totalBytesRead.toFloat() / contentLength
+                                    _state.update { it.copy(downloadingFiles = it.downloadingFiles + (url to progress)) }
+                                }
+                              }
+                        }
+                    }
+
+                    _state.update { it.copy(downloadingFiles = it.downloadingFiles - url) }
+                    withContext(Dispatchers.Main) {
+                        onComplete(localFile)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _state.update {
+                    it.copy(
+                        downloadingFiles = it.downloadingFiles - url,
+                        error = "Ошибка при загрузке файла: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chats\data\ChatsModels.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chats.data
+
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import java.time.Instant
+
+@Serializable
+data class UserDto(
+    val _id: String? = null,
+    val username: String? = null,
+    val name: String? = null
+)
+
+@Serializable
+data class AttachmentDto(
+    val title: String? = null,
+    val image_url: String? = null,
+    val video_url: String? = null,
+    val audio_url: String? = null,
+    val description: String? = null,
+    val title_link: String? = null
+)
+
+@Serializable
+data class MessageDto(
+    val _id: String,
+    val rid: String? = null,
+    val msg: String? = null,
+    val ts: JsonElement? = null,
+    val u: UserDto? = null,
+    val attachments: List<AttachmentDto>? = null,
+    val unread: Boolean? = null
+)
+
+@Serializable
+data class SubscriptionDto(
+    val _id: String,
+    val rid: String,
+    val name: String? = null,
+    val fname: String? = null,
+    val t: String, // "d" (direct), "c" (channel), "p" (group)
+    val unread: Int = 0,
+    val alert: Boolean = false,
+    val ts: JsonElement? = null,
+    val ls: JsonElement? = null,
+    val lastMessage: MessageDto? = null
+)
+
+@Serializable
+data class SubscriptionsResponse(
+    val update: List<SubscriptionDto>? = null,
+    val remove: List<SubscriptionDto>? = null,
+    val success: Boolean
+)
+
+@Serializable
+data class HistoryResponseDto(
+    val messages: List<MessageDto>,
+    val success: Boolean
+)
+
+@Serializable
+data class DdpMessage(
+    val msg: String, // e.g., "connect", "connected", "ping", "pong", "method", "result", "sub", "ready", "changed"
+    val id: String? = null,
+    val collection: String? = null,
+    val fields: DdpFields? = null,
+    val result: JsonElement? = null,
+    val error: DdpError? = null
+)
+
+@Serializable
+data class DdpFields(
+    val eventName: String? = null,
+    val args: List<JsonElement>? = null
+)
+
+@Serializable
+data class DdpError(
+    val message: String? = null,
+    val error: String? = null
+)
+
+object ChatsDateParser {
+    fun parse(element: JsonElement?): Long? {
+        if (element == null) return null
+        if (element is JsonPrimitive) {
+            val str = element.content
+            return try {
+                Instant.parse(str).toEpochMilli()
+            } catch (e: Exception) {
+                str.toLongOrNull()
+            }
+        }
+        if (element is JsonObject) {
+            val dateVal = element["\$date"]
+            if (dateVal is JsonPrimitive) {
+                return dateVal.content.toLongOrNull()
+            }
+        }
+        return null
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chats\data\ChatsRepositoryImpl.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chats.data
+
+import com.eltex.messengerapp.datastore.AuthDataStore
+import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ChatsRepositoryImpl @Inject constructor(
+    private val client: HttpClient,
+    private val okHttpClient: OkHttpClient,
+    private val authDataStore: AuthDataStore
+) : ChatsRepository {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    }
+
+    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val _chatsFlow = MutableStateFlow<List<SubscriptionDto>>(emptyList())
+    override val chatsFlow: Flow<List<SubscriptionDto>> = _chatsFlow.asStateFlow()
+
+    private val roomListeners = java.util.concurrent.ConcurrentHashMap<String, (MessageDto) -> Unit>()
+
+    private var allSubscriptions = emptyList<SubscriptionDto>()
+    private var currentPage = 0
+    private var isPaginating = false
+    private var isRefreshing = false
+    private var hasMore = true
+
+    private fun updateChatsFlow() {
+        _chatsFlow.value = allSubscriptions.take(currentPage * 20)
+        hasMore = allSubscriptions.size > currentPage * 20
+    }
+
+    private var webSocket: WebSocket? = null
+    private var shouldReconnect = false
+    private val reconnectDelayMs = 3000L
+
+    private val ChatsComparator = Comparator<SubscriptionDto> { o1, o2 ->
+        val t1 = ChatsDateParser.parse(o1.lastMessage?.ts) ?: ChatsDateParser.parse(o1.ls) ?: ChatsDateParser.parse(o1.ts) ?: 0L
+        val t2 = ChatsDateParser.parse(o2.lastMessage?.ts) ?: ChatsDateParser.parse(o2.ls) ?: ChatsDateParser.parse(o2.ts) ?: 0L
+        t2.compareTo(t1) // Descending (latest first)
+    }
+
+    override suspend fun loadNextPage() {
+        if (isPaginating || !hasMore) return
+        isPaginating = true
+        try {
+            currentPage++
+            updateChatsFlow()
+        } finally {
+            isPaginating = false
+        }
+    }
+
+    override suspend fun refresh() {
+        if (isRefreshing) return
+        isRefreshing = true
+        try {
+            val response: HttpResponse = client.get("api/v1/subscriptions.get")
+            if (response.status.value == 200) {
+                val subsResponse: SubscriptionsResponse = response.body()
+                val updatedSubs = subsResponse.update ?: emptyList()
+                allSubscriptions = updatedSubs.sortedWith(ChatsComparator)
+                currentPage = 1
+                updateChatsFlow()
+            } else {
+                val errorBody = response.body<String>()
+                throw Exception("Failed to refresh chats: $errorBody")
+            }
+        } finally {
+            isRefreshing = false
+        }
+    }
+
+    override fun startRealtimeUpdates() {
+        shouldReconnect = true
+        connectWebSocket()
+    }
+
+    override fun stopRealtimeUpdates() {
+        shouldReconnect = false
+        webSocket?.close(1000, "Normal closure")
+        webSocket = null
+    }
+
+    override suspend fun searchChats(query: String): List<SubscriptionDto> {
+        return try {
+            val jsonQuery = """{"${"$"}or":[{"name":{"${"$"}regex":"$query","${"$"}options":"i"}},{"fname":{"${"$"}regex":"$query","${"$"}options":"i"}}]}"""
+            val response: HttpResponse = client.get("api/v1/subscriptions.get") {
+                parameter("query", jsonQuery)
+            }
+            if (response.status.value == 200) {
+                val subsResponse: SubscriptionsResponse = response.body()
+                subsResponse.update ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun connectWebSocket() {
+        if (webSocket != null) return
+        val request = Request.Builder()
+            .url("wss://study-chat.eltex-co.ru/websocket")
+            .build()
+
+        webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                webSocket.send("""{"msg":"connect","version":"1","support":["1"]}""")
+            }
+
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                handleWebSocketMessage(text)
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                this@ChatsRepositoryImpl.webSocket = null
+                if (shouldReconnect) {
+                    scheduleReconnect()
+                }
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                this@ChatsRepositoryImpl.webSocket = null
+                if (shouldReconnect) {
+                    scheduleReconnect()
+                }
+            }
+        })
+    }
+
+    private fun scheduleReconnect() {
+        repositoryScope.launch {
+            delay(reconnectDelayMs)
+            if (shouldReconnect) {
+                connectWebSocket()
+            }
+        }
+    }
+
+    private fun handleWebSocketMessage(text: String) {
+        try {
+            val ddpMsg = json.decodeFromString<DdpMessage>(text)
+            when (ddpMsg.msg) {
+                "ping" -> {
+                    webSocket?.send("""{"msg":"pong"}""")
+                }
+                "connected" -> {
+                    repositoryScope.launch {
+                        val token = authDataStore.getToken().first()
+                        val userId = authDataStore.getUserId().first()
+                        if (!token.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+                            val loginMsg = """{"msg":"method","method":"login","id":"login-id","params":[{"resume":"$token"}]}"""
+                            webSocket?.send(loginMsg)
+                        }
+                    }
+                }
+                "result" -> {
+                    if (ddpMsg.id == "login-id") {
+                        if (ddpMsg.error == null) {
+                            repositoryScope.launch {
+                                val userId = authDataStore.getUserId().first()
+                                if (!userId.isNullOrEmpty()) {
+                                    subscribeToEvents(userId)
+                                }
+                            }
+                        }
+                    }
+                }
+                "changed" -> {
+                    if (ddpMsg.collection == "stream-notify-user") {
+                        val eventName = ddpMsg.fields?.eventName
+                        val args = ddpMsg.fields?.args
+                        if (eventName != null && args != null && args.size >= 2) {
+                            val action = (args[0] as? JsonPrimitive)?.content
+                            val data = args[1]
+                            
+                            if (eventName.contains("/subscriptions-changed")) {
+                                handleSubscriptionChange(action, data)
+                            } else if (eventName.contains("/rooms-changed")) {
+                                handleRoomChange(action, data)
+                            }
+                        }
+                    } else if (ddpMsg.collection == "stream-room-messages") {
+                        val args = ddpMsg.fields?.args
+                        if (args != null && args.isNotEmpty()) {
+                            val messageDto = json.decodeFromJsonElement<MessageDto>(args[0])
+                            val roomId = messageDto.rid
+                            if (roomId != null) {
+                                roomListeners[roomId]?.invoke(messageDto)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun subscribeToEvents(userId: String) {
+        val subSubs = """{"msg":"sub","id":"sub-subs","name":"stream-notify-user","params":["$userId/subscriptions-changed",false]}"""
+        webSocket?.send(subSubs)
+        val subRooms = """{"msg":"sub","id":"sub-rooms","name":"stream-notify-user","params":["$userId/rooms-changed",false]}"""
+        webSocket?.send(subRooms)
+        
+        // Re-subscribe to active room listeners on reconnection
+        roomListeners.keys.forEach { roomId ->
+            val subMsg = """{"msg":"sub","id":"sub-room-messages-$roomId","name":"stream-room-messages","params":["$roomId",false]}"""
+            webSocket?.send(subMsg)
+        }
+    }
+
+    private fun handleSubscriptionChange(action: String?, data: JsonElement) {
+        repositoryScope.launch {
+            try {
+                when (action) {
+                    "inserted", "updated" -> {
+                        val updatedSub = json.decodeFromJsonElement<SubscriptionDto>(data)
+                        val current = allSubscriptions.toMutableList()
+                        val index = current.indexOfFirst { it._id == updatedSub._id }
+                        if (index != -1) {
+                            val existing = current[index]
+                            val merged = existing.copy(
+                                name = updatedSub.name ?: existing.name,
+                                fname = updatedSub.fname ?: existing.fname,
+                                t = updatedSub.t,
+                                unread = updatedSub.unread,
+                                alert = updatedSub.alert,
+                                ts = updatedSub.ts ?: existing.ts,
+                                ls = updatedSub.ls ?: existing.ls,
+                                lastMessage = updatedSub.lastMessage ?: existing.lastMessage
+                            )
+                            current[index] = merged
+                        } else {
+                            current.add(updatedSub)
+                        }
+                        allSubscriptions = current.sortedWith(ChatsComparator)
+                        updateChatsFlow()
+                    }
+                    "removed" -> {
+                        val subId = if (data is JsonObject) {
+                            data["_id"]?.let { (it as? JsonPrimitive)?.content }
+                        } else null
+                        if (subId != null) {
+                            allSubscriptions = allSubscriptions.filter { it._id != subId }
+                            updateChatsFlow()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun handleRoomChange(action: String?, data: JsonElement) {
+        repositoryScope.launch {
+            try {
+                if (action == "updated" || action == "inserted") {
+                    val roomObj = data as? JsonObject ?: return@launch
+                    val roomId = roomObj["_id"]?.let { (it as? JsonPrimitive)?.content } ?: return@launch
+                    val roomName = roomObj["name"]?.let { (it as? JsonPrimitive)?.content }
+                    val roomFname = roomObj["fname"]?.let { (it as? JsonPrimitive)?.content }
+                    val lastMsgEl = roomObj["lastMessage"]
+                    
+                    val current = allSubscriptions.toMutableList()
+                    var changed = false
+                    for (i in current.indices) {
+                        if (current[i].rid == roomId) {
+                            var sub = current[i]
+                            if (roomName != null) sub = sub.copy(name = roomName)
+                            if (roomFname != null) sub = sub.copy(fname = roomFname)
+                            if (lastMsgEl != null) {
+                                val lastMsg = try {
+                                    json.decodeFromJsonElement<MessageDto>(lastMsgEl)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                                if (lastMsg != null) sub = sub.copy(lastMessage = lastMsg)
+                            }
+                            current[i] = sub
+                            changed = true
+                        }
+                    }
+                    if (changed) {
+                        allSubscriptions = current.sortedWith(ChatsComparator)
+                        updateChatsFlow()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun subscribeToRoomMessages(roomId: String, callback: (MessageDto) -> Unit) {
+        roomListeners[roomId] = callback
+        val subMsg = """{"msg":"sub","id":"sub-room-messages-$roomId","name":"stream-room-messages","params":["$roomId",false]}"""
+        webSocket?.send(subMsg)
+    }
+
+    override fun unsubscribeFromRoomMessages(roomId: String) {
+        roomListeners.remove(roomId)
+        val unsubMsg = """{"msg":"unsub","id":"sub-room-messages-$roomId"}"""
+        webSocket?.send(unsubMsg)
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chats\domain\ChatsRepository.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chats.domain
+
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
+import kotlinx.coroutines.flow.Flow
+
+interface ChatsRepository {
+    val chatsFlow: Flow<List<SubscriptionDto>>
+    suspend fun loadNextPage()
+    suspend fun refresh()
+    fun startRealtimeUpdates()
+    fun stopRealtimeUpdates()
+    suspend fun searchChats(query: String): List<SubscriptionDto>
+    fun subscribeToRoomMessages(roomId: String, callback: (MessageDto) -> Unit)
+    fun unsubscribeFromRoomMessages(roomId: String)
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chats\ui\ChatsScreen.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chats.ui
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.eltex.messengerapp.feature.chats.data.AttachmentDto
+import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
+import com.eltex.messengerapp.feature.chats.data.MessageDto
+import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
+import com.eltex.messengerapp.ui.theme.AppColors
+import com.eltex.messengerapp.ui.theme.BrandPrimary
+import com.eltex.messengerapp.ui.theme.BrandDark
+import com.eltex.messengerapp.ui.theme.BrandMinor
+import coil.compose.SubcomposeAsyncImage
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+object ChatsDateFormatter {
+    fun format(timestamp: Long): String {
+        return try {
+            val instant = Instant.ofEpochMilli(timestamp)
+            val zoneId = ZoneId.systemDefault()
+            val dateTime = LocalDateTime.ofInstant(instant, zoneId)
+            val now = LocalDateTime.now(zoneId)
+            val todayStart = now.toLocalDate().atStartOfDay()
+
+            if (dateTime.isAfter(todayStart)) {
+                val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                dateTime.format(formatter)
+            } else {
+                val sevenDaysAgo = todayStart.minusDays(6)
+                if (dateTime.isAfter(sevenDaysAgo)) {
+                    val dayOfWeek = dateTime.dayOfWeek
+                    when (dayOfWeek) {
+                        DayOfWeek.MONDAY -> "пн"
+                        DayOfWeek.TUESDAY -> "вт"
+                        DayOfWeek.WEDNESDAY -> "ср"
+                        DayOfWeek.THURSDAY -> "чт"
+                        DayOfWeek.FRIDAY -> "пт"
+                        DayOfWeek.SATURDAY -> "сб"
+                        DayOfWeek.SUNDAY -> "вс"
+                    }
+                } else {
+                    val formatter = DateTimeFormatter.ofPattern("dd.MM")
+                    dateTime.format(formatter)
+                }
+            }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+}
+
+private val initialsGradients = listOf(
+    Brush.linearGradient(listOf(Color(0xFFEF5350), Color(0xFFE53935))),
+    Brush.linearGradient(listOf(Color(0xFFEC407A), Color(0xFFD81B60))),
+    Brush.linearGradient(listOf(Color(0xFFAB47BC), Color(0xFF8E24AA))),
+    Brush.linearGradient(listOf(Color(0xFF7E57C2), Color(0xFF5E35B1))),
+    Brush.linearGradient(listOf(Color(0xFF5C6BC0), Color(0xFF3949AB))),
+    Brush.linearGradient(listOf(Color(0xFF42A5F5), Color(0xFF1E88E5))),
+    Brush.linearGradient(listOf(Color(0xFF26A69A), Color(0xFF00897B))),
+    Brush.linearGradient(listOf(Color(0xFF66BB6A), Color(0xFF43A047))),
+    Brush.linearGradient(listOf(Color(0xFFFFB74D), Color(0xFFF57C00))),
+    Brush.linearGradient(listOf(Color(0xFFFF8A65), Color(0xFFE64A19)))
+)
+
+private fun getGradientForName(name: String): Brush {
+    val index = Math.abs(name.hashCode()) % initialsGradients.size
+    return initialsGradients[index]
+}
+
+private fun getInitials(name: String?): String {
+    if (name.isNullOrBlank()) return "?"
+    val words = name.trim().split("\\s+".toRegex())
+    return if (words.size == 1) {
+        words[0].take(1).uppercase()
+    } else {
+        (words[0].take(1) + words[1].take(1)).uppercase()
+    }
+}
+
+private fun getLastMessageText(chat: SubscriptionDto): String {
+    val lastMsg = chat.lastMessage
+    if (lastMsg == null) return "Сообщений нет"
+    if (!lastMsg.msg.isNullOrBlank()) return lastMsg.msg
+
+    val attachment = lastMsg.attachments?.firstOrNull()
+    if (attachment != null) {
+        return when {
+            attachment.image_url != null -> "Изображение"
+            attachment.video_url != null -> "Видео"
+            else -> "Документ"
+        }
+    }
+    return "Сообщений нет"
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChatsScreen(
+    viewModel: ChatsViewModel,
+    onChatClick: (SubscriptionDto) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val state = viewModel.state
+    val displayedChats = viewModel.getDisplayedChats()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                viewModel.onForeground()
+            } else if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.onBackground()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BrandDark)
+                    .statusBarsPadding()
+                    .padding(bottom = 10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Чаты",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                    IconButton(
+                        onClick = { /* Visual only */ },
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Создать чат",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                BasicTextField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChanged(it) },
+                    singleLine = true,
+                    textStyle = TextStyle(color = AppColors.TextPrimary, fontSize = 15.sp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .height(36.dp)
+                        .background(Color.White, RoundedCornerShape(8.dp)),
+                    decorationBox = { innerTextField ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = AppColors.TextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(modifier = Modifier.weight(1f)) {
+                                if (state.searchQuery.isEmpty()) {
+                                    Text(
+                                        text = "Поиск по чатам",
+                                        color = AppColors.TextSecondary,
+                                        fontSize = 15.sp
+                                    )
+                                }
+                                innerTextField()
+                            }
+                            if (state.searchQuery.isNotEmpty()) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Очистить",
+                                    tint = AppColors.TextSecondary,
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clickable { viewModel.onSearchQueryChanged("") }
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        },
+        containerColor = Color.White,
+        modifier = modifier
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+
+            // Error Banner
+            AnimatedVisibility(
+                visible = state.error != null,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                state.error?.let { errorMsg ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFFFEBEE))
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .clickable { viewModel.clearError() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Ошибка",
+                            tint = Color.Red
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = errorMsg,
+                            color = Color.Red,
+                            fontSize = 14.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // Main Content Area
+            Box(modifier = Modifier.weight(1f)) {
+                if (state.isLoading && displayedChats.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = BrandPrimary)
+                    }
+                } else if (displayedChats.isEmpty() && state.searchQuery.length >= 2) {
+                    EmptySearchScreen(query = state.searchQuery)
+                } else if (displayedChats.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Чатов пока нет",
+                            color = AppColors.TextSecondary,
+                            fontSize = 16.sp
+                        )
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(displayedChats, key = { it._id }) { chat ->
+                            ChatRowItem(
+                                chat = chat,
+                                currentUserId = state.currentUserId,
+                                onClick = { onChatClick(chat) }
+                            )
+                        }
+
+                        // Infinite scroll pagination footer
+                        if (displayedChats.size >= 20 && !state.isPaginating && state.searchQuery.length < 2) {
+                            item {
+                                LaunchedEffect(Unit) {
+                                    viewModel.loadNextPage()
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = BrandPrimary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        } else if (state.isPaginating) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        color = BrandPrimary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatRowItem(
+    chat: SubscriptionDto,
+    currentUserId: String?,
+    onClick: () -> Unit
+) {
+    val displayName = chat.fname ?: chat.name ?: "Чат"
+    
+    // Avatar url logic
+    val avatarUrl = if (chat.t == "d") {
+        "https://study-chat.eltex-co.ru/avatar/${chat.name}"
+    } else {
+        "https://study-chat.eltex-co.ru/avatar/room/${chat.rid}"
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Avatar view with status badge
+            Box(
+                modifier = Modifier.size(52.dp)
+            ) {
+                SubcomposeAsyncImage(
+                    model = avatarUrl,
+                    contentDescription = displayName,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        InitialsAvatar(name = displayName)
+                    },
+                    error = {
+                        InitialsAvatar(name = displayName)
+                    }
+                )
+                
+                // Online/Verified status badge for direct chats (t == "d") except Favorites
+                if (chat.t == "d" && displayName != "Избранное") {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .align(Alignment.BottomEnd)
+                            .background(Color(0xFF25CBA3), CircleShape)
+                            .border(1.5.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(10.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Name and Message
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = displayName,
+                        color = AppColors.TextPrimary,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Checkmarks status indicator (only for messages sent by us)
+                    val lastMsg = chat.lastMessage
+                    val isSentByMe = lastMsg?.u?._id == currentUserId
+                    val rawMsgText = getLastMessageText(chat)
+                    if (isSentByMe && lastMsg != null && rawMsgText != "Сообщений нет") {
+                        val isRead = lastMsg.unread == false
+                        Icon(
+                            imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Check,
+                            contentDescription = if (isRead) "Просмотрено" else "Доставлено",
+                            tint = if (isRead) Color(0xFF25CBA3) else AppColors.TextSecondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+
+                    // Time/Date of latest message
+                    val lastMsgTime = ChatsDateParser.parse(chat.lastMessage?.ts)
+                        ?: ChatsDateParser.parse(chat.ls)
+                        ?: ChatsDateParser.parse(chat.ts)
+                    val timeText = if (lastMsgTime != null) ChatsDateFormatter.format(lastMsgTime) else ""
+                    
+                    Text(
+                        text = timeText,
+                        color = AppColors.TextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Prefix and message text
+                    val rawMsgText = getLastMessageText(chat)
+                    
+                    // Group chat prefix formatting
+                    val prefix = if (chat.t != "d" && chat.lastMessage != null && rawMsgText != "Сообщений нет") {
+                        val lastMsg = chat.lastMessage
+                        if (lastMsg.u?._id == currentUserId) {
+                            "Вы: "
+                        } else {
+                            "${lastMsg.u?.name ?: lastMsg.u?.username ?: "Пользователь"}: "
+                        }
+                    } else ""
+
+                    val messageContent = "$prefix$rawMsgText"
+
+                    Text(
+                        text = messageContent,
+                        color = AppColors.TextSecondary,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Unread Count Badge (if unread > 0 and not sent by us)
+                    val lastMsg = chat.lastMessage
+                    val isSentByMe = lastMsg?.u?._id == currentUserId
+                    if (chat.unread > 0 && !isSentByMe) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(BrandPrimary)
+                        ) {
+                            Text(
+                                text = chat.unread.toString(),
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Horizontal divider starting after the avatar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 82.dp)
+                .height(1.dp)
+                .background(Color(0xFFEEEEEE))
+        )
+    }
+}
+
+@Composable
+fun InitialsAvatar(
+    name: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .fillMaxSize()
+            .background(getGradientForName(name))
+    ) {
+        Text(
+            text = getInitials(name),
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun EmptySearchScreen(
+    query: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = AppColors.TextSecondary.copy(alpha = 0.3f)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Чат с названием ",
+                    color = AppColors.TextSecondary,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "\"$query\"",
+                    color = BrandPrimary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+            Text(
+                text = " не найден",
+                color = AppColors.TextSecondary,
+                fontSize = 16.sp
+            )
+        }
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chats\ui\ChatsState.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chats.ui
+
+import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
+
+data class ChatsState(
+    val chats: List<SubscriptionDto> = emptyList(),
+    val searchQuery: String = "",
+    val isLoading: Boolean = false,
+    val isPaginating: Boolean = false,
+    val error: String? = null,
+    val currentUserId: String? = null
+)
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\chats\ui\ChatsViewModel.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.chats.ui
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.eltex.messengerapp.datastore.AuthDataStore
+import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
+import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
+import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class ChatsViewModel @Inject constructor(
+    private val repository: ChatsRepository,
+    private val authDataStore: AuthDataStore
+) : ViewModel() {
+
+    var state by mutableStateOf(ChatsState())
+        private set
+
+    private var searchJob: Job? = null
+    private var searchResults by mutableStateOf<List<SubscriptionDto>>(emptyList())
+
+    private val ChatsComparator = Comparator<SubscriptionDto> { o1, o2 ->
+        val t1 = ChatsDateParser.parse(o1.lastMessage?.ts) ?: ChatsDateParser.parse(o1.ls) ?: ChatsDateParser.parse(o1.ts) ?: 0L
+        val t2 = ChatsDateParser.parse(o2.lastMessage?.ts) ?: ChatsDateParser.parse(o2.ls) ?: ChatsDateParser.parse(o2.ts) ?: 0L
+        t2.compareTo(t1) // Descending (latest first)
+    }
+
+    init {
+        viewModelScope.launch {
+            val userId = authDataStore.getUserId().first()
+            state = state.copy(currentUserId = userId)
+        }
+
+        viewModelScope.launch {
+            state = state.copy(isLoading = true)
+            repository.chatsFlow.collectLatest { list ->
+                state = state.copy(
+                    chats = list,
+                    isLoading = false
+                )
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                repository.refresh()
+            } catch (e: Exception) {
+                state = state.copy(error = e.message)
+            }
+        }
+        repository.startRealtimeUpdates()
+    }
+
+    fun onForeground() {
+        repository.startRealtimeUpdates()
+        viewModelScope.launch {
+            try {
+                repository.refresh()
+            } catch (e: Exception) {
+                state = state.copy(error = e.message)
+            }
+        }
+    }
+
+    fun onBackground() {
+        repository.stopRealtimeUpdates()
+    }
+
+    fun loadNextPage() {
+        if (state.searchQuery.length >= 2) return
+        if (state.isPaginating) return
+        state = state.copy(isPaginating = true)
+        viewModelScope.launch {
+            try {
+                repository.loadNextPage()
+            } catch (e: Exception) {
+                state = state.copy(error = e.message)
+            } finally {
+                state = state.copy(isPaginating = false)
+            }
+        }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        state = state.copy(searchQuery = query)
+        searchJob?.cancel()
+        if (query.length < 2) {
+            searchResults = emptyList()
+            return
+        }
+
+        searchJob = viewModelScope.launch {
+            delay(300)
+            state = state.copy(isLoading = true)
+            try {
+                val results = repository.searchChats(query)
+                searchResults = results
+            } catch (e: Exception) {
+                state = state.copy(error = e.message)
+            } finally {
+                state = state.copy(isLoading = false)
+            }
+        }
+    }
+
+    fun getDisplayedChats(): List<SubscriptionDto> {
+        val query = state.searchQuery
+        if (query.length < 2) {
+            return state.chats
+        }
+        val localFiltered = state.chats.filter {
+            it.fname?.contains(query, ignoreCase = true) == true ||
+            it.name?.contains(query, ignoreCase = true) == true
+        }
+        return (localFiltered + searchResults)
+            .distinctBy { it._id }
+            .sortedWith(ChatsComparator)
+    }
+
+    fun clearError() {
+        state = state.copy(error = null)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repository.stopRealtimeUpdates()
+    }
+}
+
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\main\MainScreen.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.main
+
+import androidx.annotation.StringRes
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.eltex.messengerapp.NavDestinations
+import com.eltex.messengerapp.R
+import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.eltex.messengerapp.feature.chats.ui.ChatsScreen
+import com.eltex.messengerapp.feature.chats.ui.ChatsViewModel
+import com.eltex.messengerapp.ui.theme.BrandPrimary
+import com.eltex.messengerapp.ui.theme.MessengerAppTheme
+
+enum class Tab(
+    @param:StringRes val titleRes: Int,
+    val icon: ImageVector,
+    val selectedIcon: ImageVector
+) {
+    Chats(R.string.chats, Icons.Default.ChatBubbleOutline, Icons.Default.ChatBubble),
+    Profile(R.string.profile, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)
+}
+
+@Composable
+fun MainScreen(
+    navController: NavController = rememberNavController()
+) {
+    var selectedTab by rememberSaveable { mutableStateOf(Tab.Chats) }
+
+    Scaffold(
+        bottomBar = {
+            BottomAppBar(
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(elevation = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    CustomNavItem(
+                        tab = Tab.Chats,
+                        isSelected = selectedTab == Tab.Chats,
+                        onClick = { selectedTab = Tab.Chats },
+                        modifier = Modifier.padding(start = 16.dp)
+                    )
+
+                    CustomNavItem(
+                        tab = Tab.Profile,
+                        isSelected = selectedTab == Tab.Profile,
+                        onClick = { selectedTab = Tab.Profile },
+                        modifier = Modifier.padding(end = 16.dp)
+                    )
+                }
+            }
+        }
+    ) { insets ->
+        Crossfade(
+            modifier = Modifier.padding(bottom = insets.calculateBottomPadding()),
+            targetState = selectedTab
+        ) { tab ->
+            when (tab) {
+                Tab.Chats -> {
+                    val chatsViewModel: ChatsViewModel = hiltViewModel()
+                    ChatsScreen(
+                        viewModel = chatsViewModel,
+                        onChatClick = { chat ->
+                            navController.navigate(
+                                NavDestinations.Chat(
+                                    roomId = chat.rid,
+                                    roomName = chat.fname ?: chat.name ?: "Чат",
+                                    roomType = chat.t
+                                )
+                            )
+                        }
+                    )
+                }
+                Tab.Profile -> ProfileScreen(
+                    onLogout = {
+                        navController.navigate(NavDestinations.Auth) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+
+    }
+}
+
+@Composable
+fun CustomNavItem(
+    tab: Tab,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .clickable { onClick() }
+            .padding(vertical = 8.dp)
+            .size(75.dp, 50.dp)
+    ) {
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.6f),
+            contentAlignment = Alignment.Center
+        ) {
+            Box {
+                Icon(
+                    imageVector = if (isSelected) tab.selectedIcon else tab.icon,
+                    contentDescription = stringResource(tab.titleRes),
+                    tint = if (isSelected) BrandPrimary else Color(0xFF868686),
+                    modifier = Modifier.size(20.dp)
+                )
+                if (tab == Tab.Profile) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(10.dp)
+                            .background(
+                                color = Color(0xFF25CBA3),
+                                shape = CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Verified",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.4f),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+
+                text = stringResource(tab.titleRes),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isSelected) BrandPrimary else Color(0xFF868686)
+            )
+        }
+
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun MainScreenPreview() {
+    MessengerAppTheme {
+        MainScreen()
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\data\ProfileRepositoryImpl.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.data
+
+import com.eltex.messengerapp.datastore.AuthDataStore
+import com.eltex.messengerapp.feature.profile.domain.ProfileRepository
+import com.eltex.messengerapp.feature.user.data.UserApi
+import com.eltex.messengerapp.feature.user.domain.User
+import com.eltex.messengerapp.util.Result
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ProfileRepositoryImpl @Inject constructor(
+    private val authDataStore: AuthDataStore,
+    private val userApi: UserApi
+) : ProfileRepository {
+    override fun getUser(): Flow<Result<User>> = flow {
+        val token = authDataStore.getToken().first()
+        val userId = authDataStore.getUserId().first()
+
+        if (token == null || userId == null) {
+            emit(Result.Error("Пользователь не авторизован"))
+            return@flow
+        }
+
+        val result = try {
+            val response = userApi.getUserInfo(userId)
+            if (response.success) {
+                Result.Success(response.user.toDomain())
+            } else {
+                Result.Error("Ошибка сервера: данные не получены")
+            }
+        } catch (e: Exception) {
+            Result.Error("Ошибка сети: ${e.message}")
+
+        }
+
+        emit(result)
+    }
+
+    override suspend fun logout() {
+        authDataStore.logout()
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\domain\ProfileRepository.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.domain
+
+import com.eltex.messengerapp.feature.user.domain.User
+import com.eltex.messengerapp.util.Result
+import kotlinx.coroutines.flow.Flow
+
+interface ProfileRepository {
+    fun getUser(): Flow<Result<User>>
+    suspend fun logout()
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\ui\LogoutDialog.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.ui
+
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import com.eltex.messengerapp.R
+import com.eltex.messengerapp.ui.theme.MessengerAppTheme
+
+@Composable
+fun LogoutDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.logout_dialog_title)) },
+        text = { Text(stringResource(R.string.logout_dialog_message)) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(stringResource(R.string.logout_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.logout_dialog_dismiss))
+            }
+        }
+    )
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun LogoutDialogPreview() {
+    MessengerAppTheme {
+        val showDialog = remember { true }
+
+        if (showDialog) {
+            LogoutDialog({}, {})
+        }
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\ui\ProfileEffect.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.ui
+
+sealed interface ProfileEffect {
+    object NavigateToLogin : ProfileEffect
+//    data class ShowError(val message: String): ProfileEffect
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\ui\ProfileMessage.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.ui
+
+sealed interface ProfileMessage {
+    object LoadUser: ProfileMessage
+    object ShowLogoutDialog: ProfileMessage
+    object DismissLogoutDialog: ProfileMessage
+    object Logout: ProfileMessage
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\ui\ProfileScreen.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ExitToApp
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.eltex.messengerapp.R
+import com.eltex.messengerapp.feature.user.domain.User
+import com.eltex.messengerapp.ui.ProfileAvatar
+import com.eltex.messengerapp.ui.theme.BrandDark
+import com.eltex.messengerapp.ui.theme.BrandMinor
+import com.eltex.messengerapp.ui.theme.BrandPrimary
+import com.eltex.messengerapp.ui.theme.MessengerAppTheme
+
+@Composable
+fun ProfileScreen(
+    onLogout: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is ProfileEffect.NavigateToLogin -> onLogout()
+//                is ProfileEffect.ShowError -> {}
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = BrandMinor)
+    ) {
+        when {
+            state.isLoading && state.user == null -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+            state.error != null && state.user == null -> {
+                Text(
+                    text = "Ошибка: ${state.error}",
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.Red
+                )
+            }
+
+            else -> {
+                state.user?.let { user ->
+                    ProfileContent(
+                        user = user,
+                        onLogoutClick = { viewModel.messageHandler(ProfileMessage.ShowLogoutDialog) }
+                    )
+                }
+            }
+        }
+
+        if (state.isLogoutDialogVisible) {
+            LogoutDialog(
+                onConfirm = { viewModel.messageHandler(ProfileMessage.Logout) },
+                onDismiss = { viewModel.messageHandler(ProfileMessage.DismissLogoutDialog) }
+            )
+        }
+    }
+
+}
+
+
+@Composable
+fun ProfileContent(
+    user: User,
+    onLogoutClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BrandMinor)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(142.dp)
+                    .background(
+                        color = BrandDark
+                    )
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 80.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                ProfileAvatar(
+                    initials = user.getInitials(),
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(46.dp)
+        ) {
+            Text(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .align(Alignment.CenterHorizontally),
+                text = user.getFullName(),
+                fontSize = 17.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight(600),
+                color = Color.Black
+            )
+
+            Button(
+                onClick = onLogoutClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(PageSize.Fixed(48.dp).pageSize),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 2.dp
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+
+                ) {
+                    Row {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
+                            contentDescription = "Выйти",
+                            tint = BrandPrimary,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .graphicsLayer(
+                                    scaleX = -1f
+                                )
+                        )
+                        Text(
+                            text = "Выйти",
+                            fontSize = 17.sp,
+                            lineHeight = 24.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight(400),
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+
+
+                    }
+                    Icon(
+                        painter = painterResource(R.drawable.arrow_forward),
+                        contentDescription = "Arrow from IOS",
+                        tint = Color(0xFFCBCBCC),
+                    )
+                }
+
+            }
+        }
+
+    }
+
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ProfileScreenPreview() {
+    MessengerAppTheme {
+        val mockUser = User(
+            id = "1",
+            firstName = "Иван",
+            lastName = "Иванов",
+            patronymic = "Иванович",
+            avatarUrl = null
+        )
+
+        ProfileContent(
+            user = mockUser,
+            onLogoutClick = {}
+        )
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\ui\ProfileState.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.ui
+
+import com.eltex.messengerapp.feature.user.domain.User
+
+data class ProfileState(
+    val user: User? = null,
+    val isLoading: Boolean = true,
+    val isLogoutDialogVisible: Boolean = false,
+    val error: String? = null
+)
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\profile\ui\ProfileViewModel.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.profile.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.eltex.messengerapp.feature.profile.domain.ProfileRepository
+import com.eltex.messengerapp.util.Result
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
+    private val profileRepository: ProfileRepository
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(ProfileState())
+    val state: StateFlow<ProfileState> = _state.asStateFlow()
+
+    private val _effect = MutableSharedFlow<ProfileEffect>()
+    val effect = _effect.asSharedFlow()
+
+    init {
+        loadUser()
+    }
+
+    fun messageHandler(message: ProfileMessage) {
+        when (message) {
+            ProfileMessage.LoadUser -> loadUser()
+            ProfileMessage.Logout -> logout()
+            ProfileMessage.DismissLogoutDialog -> dismissLogoutDialog()
+            ProfileMessage.ShowLogoutDialog -> showLogoutDialog()
+        }
+    }
+
+    private fun loadUser() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            profileRepository.getUser().collect { result ->
+                when (result) {
+                    is Result.Success -> {
+                        _state.update {
+                            it.copy(
+                                user = result.data,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                    }
+
+                    is Result.Loading -> {}
+                    is Result.Error -> {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+//                        _effect.emit(ProfileEffect.ShowError(result.message))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showLogoutDialog() {
+        _state.update { it.copy(isLogoutDialogVisible = true) }
+    }
+
+    private fun dismissLogoutDialog() {
+        _state.update { it.copy(isLogoutDialogVisible = false) }
+    }
+
+    private fun logout() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, isLogoutDialogVisible = false) }
+
+            try {
+                profileRepository.logout()
+                _effect.emit(ProfileEffect.NavigateToLogin)
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Ошибка выхода: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\splash\SplashViewModel.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.splash
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.eltex.messengerapp.NavDestinations
+import com.eltex.messengerapp.datastore.AuthDataStore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class SplashViewModel @Inject constructor(
+    private val authDataStore: AuthDataStore
+) : ViewModel() {
+
+    private val _isReady = MutableStateFlow(false)
+    val isReady = _isReady.asStateFlow()
+
+    private val _startDestination = MutableStateFlow<Any?>(null)
+    val startDestination = _startDestination.asStateFlow()
+
+    fun checkAuth() {
+        viewModelScope.launch {
+            val isLoggedIn = authDataStore.isLoggedIn().first()
+
+            _startDestination.value = if (isLoggedIn) {
+                NavDestinations.Main
+            } else {
+                NavDestinations.Auth
+            }
+
+            _isReady.value = true
+        }
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\user\data\UserApi.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.user.data
+
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.url
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class UserApi @Inject constructor(
+    private val client: HttpClient,
+) {
+
+    suspend fun getUserInfo(
+        userId: String,
+    ): UserInfoResponseDto {
+        return client.get {
+            url("api/v1/users.info")
+            parameter("userId", userId)
+        }.body()
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\user\data\UserDto.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.user.data
+
+import com.eltex.messengerapp.feature.user.domain.User
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class UserInfoResponseDto(
+    val user: UserDto,
+    val success: Boolean
+)
+
+@Serializable
+data class UserDto(
+    val _id: String,
+    val name: String?,
+    val username: String?,
+    val avatarETag: String? = null,
+    val emails: List<EmailDto>? = null
+) {
+    fun toDomain(): User {
+        val nameParts = name?.split(" ") ?: emptyList()
+        val lastName = nameParts.getOrNull(0) ?: ""
+        val firstName = nameParts.getOrNull(1) ?: ""
+        val patronymic = nameParts.getOrNull(2)
+
+        return User(
+            id = _id,
+            firstName = firstName,
+            lastName = lastName,
+            patronymic = patronymic,
+            avatarUrl = null
+        )
+    }
+}
+
+@Serializable
+data class EmailDto(
+    val address: String,
+    val verified: Boolean = false
+)
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\feature\user\domain\User.kt
+================================================================================
+
+package com.eltex.messengerapp.feature.user.domain
+
+data class User(
+    val id: String,
+    val firstName: String,
+    val lastName: String,
+    val patronymic: String? = null,
+    val avatarUrl: String? = null
+) {
+    fun getFullName(): String {
+        return buildString {
+            append(lastName)
+            append(" ")
+            append(firstName)
+            patronymic?.let {
+                append(" ")
+                append(patronymic)
+            }
+        }
+    }
+
+    fun getInitials(): String {
+        return buildString {
+            append(lastName.firstOrNull()?.uppercaseChar() ?: "")
+            append(" ")
+            append(firstName.firstOrNull()?.uppercaseChar() ?: "")
+        }
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\ui\Avatar.kt
+================================================================================
+
+package com.eltex.messengerapp.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.eltex.messengerapp.ui.theme.BrandMinor
+
+@Composable
+fun ProfileAvatar(
+    initials: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(118.dp)
+            .clip(CircleShape)
+            .background(Color(0xFFB8B8B8))
+            .border(
+                color = BrandMinor,
+                width = 2.dp,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initials,
+            color = Color.Black,
+            fontSize = 32.sp,
+            lineHeight = 60.sp,
+            letterSpacing = 0.sp,
+            fontWeight = FontWeight(600),
+            textAlign = TextAlign.Center
+
+        )
+    }
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\ui\theme\Color.kt
+================================================================================
+
+package com.eltex.messengerapp.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+/**
+ * StyleGuide - цвета приложения
+ */
+object AppColors {
+    // Основные цвета
+    val Primary = Color(0xFF2196F3)
+    val PrimaryDark = Color(0xFF0D47A1)
+    val White = Color.White
+    val Black = Color.Black
+
+    // Текст
+    val TextPrimary = Color(0xFF1F1F1F)      // hsba(0, 0%, 12%, 1) - темный
+    val TextSecondary = Color(0xFF878787)    // hsba(0, 0%, 53%, 1) - серый
+    val TextWhite = Color.White
+
+    // Ошибки
+    val Error = Color.Red
+    val ErrorContainer = Color.White.copy(alpha = 0.9f)
+
+    // Прозрачности
+    val OverlayDark = Color(0xCC000000)      // 80% черный
+    val OverlayMedium = Color(0x88000000)    // 53% черный
+
+    // Кнопка
+    val ButtonEnabled = Color.White
+    val ButtonDisabled = Color.White.copy(alpha = 0.5f)
+    val ButtonTextEnabled = Color(0xFF1F1F1F)    // темный
+    val ButtonTextDisabled = Color(0xFF1F1F1F).copy(alpha = 0.5f)
+
+    // Поля ввода
+    val InputBackground = Color.White.copy(alpha = 0.9f)
+    val InputBackgroundUnfocused = Color.White.copy(alpha = 0.8f)
+    val InputLabel = Color(0xFF878787)       // серый
+    val InputText = Color.Black
+}
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
+
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
+
+val BrandDark = Color(0xFF1B416B)
+
+val BrandMinor = Color(0xFFEDF4F7)
+
+val BrandPrimary = Color(0xFF329BDE)
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\ui\theme\Theme.kt
+================================================================================
+
+package com.eltex.messengerapp.ui.theme
+
+import android.app.Activity
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+
+private val DarkColorScheme = darkColorScheme(
+    primary = Purple80,
+    secondary = PurpleGrey80,
+    tertiary = Pink80
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary = Purple40,
+    secondary = PurpleGrey40,
+    tertiary = Pink40
+
+    /* Other default colors to override
+    background = Color(0xFFFFFBFE),
+    surface = Color(0xFFFFFBFE),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onBackground = Color(0xFF1C1B1F),
+    onSurface = Color(0xFF1C1B1F),
+    */
+)
+
+@Composable
+fun MessengerAppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Dynamic color is available on Android 12+
+    dynamicColor: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content
+    )
+}
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\ui\theme\Type.kt
+================================================================================
+
+package com.eltex.messengerapp.ui.theme
+
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
+// Set of Material typography styles to start with
+val Typography = Typography(
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    )
+    /* Other default text styles to override
+    titleLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = 0.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.5.sp
+    )
+    */
+)
+
+================================================================================
+FILE: .\app\src\main\java\com\eltex\messengerapp\util\Result.kt
+================================================================================
+
+package com.eltex.messengerapp.util
+
+sealed class Result<out T> {
+    data class Success<T>(val data: T) : Result<T>()
+    data class Error(val message: String) : Result<Nothing>()
+    data object Loading : Result<Nothing>()
+}
+
+================================================================================
+FILE: .\app\src\main\res\values\colors.xml
+================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
+
+================================================================================
+FILE: .\app\src\main\res\values\ic_launcher_background.xml
+================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>
+
+================================================================================
+FILE: .\app\src\main\res\values\strings.xml
+================================================================================
+
+<resources>
+    <string name="app_name">Messenger</string>
+    <string name="chats">Chats</string>
+    <string name="profile">Profile</string>
+
+    <!-- Auth Screen -->
+    <string name="login_hint">Login</string>
+    <string name="password_hint">Password</string>
+    <string name="login">Sign In</string>
+    <string name="login_success">Login successful!</string>
+    <string name="login_empty_error">Please enter login</string>
+    <string name="password_empty_error">Please enter password</string>
+    <string name="password_too_short_error">Password must be at least 6 characters</string>
+    <string name="show_password_description">Show password</string>
+    <string name="hide_password_description">Hide password</string>
+    <string name="auth_title">Enter your login and password to log in preferences</string>
+
+    <!-- Errors -->
+    <string name="network_error">Network error</string>
+    <string name="forbidden_error">Access forbidden</string>
+    <string name="unknown_error">Unknown error</string>
+
+    <string name="logout_dialog_title">Log out</string>
+    <string name="logout_dialog_message">Are you sure you want to log out?</string>
+    <string name="logout_dialog_confirm">Log out</string>
+    <string name="logout_dialog_dismiss">Cancel</string>
+</resources>
+
+================================================================================
+FILE: .\app\src\main\res\values\themes.xml
+================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MessengerApp" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.MessengerApp.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#204865</item>
+
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+
+        <item name="postSplashScreenTheme">@style/Theme.MessengerApp</item>
+    </style>
+</resources>
+
+================================================================================
+FILE: .\app\src\main\res\values-ru\strings.xml
+================================================================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Мессенджер</string>
+    <string name="chats">Чаты</string>
+    <string name="profile">Профиль</string>
+
+    <!-- Auth Screen -->
+    <string name="login_hint">Логин</string>
+    <string name="password_hint">Пароль</string>
+    <string name="login">Войти</string>
+    <string name="login_success">Вход выполнен успешно!</string>
+    <string name="login_empty_error">Введите логин</string>
+    <string name="password_empty_error">Введите пароль</string>
+    <string name="password_too_short_error">Пароль должен быть минимум 6 символов</string>
+    <string name="show_password_description">Показать пароль</string>
+    <string name="hide_password_description">Скрыть пароль</string>
+    <string name="auth_title">Введите логин и пароль для входа</string>
+
+    <!-- Errors -->
+    <string name="network_error">Ошибка сети</string>
+    <string name="forbidden_error">Доступ запрещен</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
+
+    <string name="logout_dialog_title">Выйти из аккаунта</string>
+    <string name="logout_dialog_message">Вы уверены, что хотите выйти?</string>
+    <string name="logout_dialog_confirm">Выйти</string>
+    <string name="logout_dialog_dismiss">Отменить</string>
+</resources>

@@ -1,6 +1,9 @@
 package com.eltex.messengerapp.feature.chat.ui
 
 import android.content.Context
+import android.net.Uri
+import android.content.ContentUris
+import android.provider.MediaStore
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -126,6 +129,145 @@ class ChatViewModel @Inject constructor(
                         error = "Ошибка при загрузке файла: ${e.message}"
                     )
                 }
+            }
+        }
+    }
+
+    fun setAttachmentPanelOpen(open: Boolean) {
+        _state.update { it.copy(isAttachmentPanelOpen = open) }
+        if (!open) {
+            clearSelection()
+        }
+    }
+
+    fun setActiveTab(tab: Int, context: Context) {
+        _state.update { it.copy(activeTab = tab, selectedMedia = emptyList()) }
+        if (_state.value.hasMediaPermission) {
+            loadLocalMedia(context)
+        }
+    }
+
+    fun toggleMediaSelection(uri: Uri) {
+        _state.update { current ->
+            val list = current.selectedMedia.toMutableList()
+            if (list.contains(uri)) {
+                list.remove(uri)
+            } else {
+                list.add(uri)
+            }
+            current.copy(selectedMedia = list)
+        }
+    }
+
+    fun clearSelection() {
+        _state.update { it.copy(selectedMedia = emptyList()) }
+    }
+
+    fun updatePermissionState(granted: Boolean, context: Context) {
+        _state.update { it.copy(hasMediaPermission = granted) }
+        if (granted) {
+            loadLocalMedia(context)
+        }
+    }
+
+    fun loadLocalMedia(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val mediaList = mutableListOf<Uri>()
+                val activeTab = _state.value.activeTab
+                
+                if (activeTab == 0) { // Photos
+                    val projection = arrayOf(MediaStore.Images.Media._ID)
+                    val cursor = context.contentResolver.query(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        projection,
+                        null,
+                        null,
+                        "${MediaStore.Images.Media.DATE_ADDED} DESC"
+                    )
+                    cursor?.use {
+                        val idCol = it.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                        while (it.moveToNext()) {
+                            val id = it.getLong(idCol)
+                            val uri = ContentUris.withAppendedId(
+                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                                id
+                            )
+                            mediaList.add(uri)
+                        }
+                    }
+                } else if (activeTab == 1) { // Videos
+                    val projection = arrayOf(MediaStore.Video.Media._ID)
+                    val cursor = context.contentResolver.query(
+                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                        projection,
+                        null,
+                        null,
+                        "${MediaStore.Video.Media.DATE_ADDED} DESC"
+                    )
+                    cursor?.use {
+                        val idCol = it.getColumnIndexOrThrow(MediaStore.Video.Media._ID)
+                        while (it.moveToNext()) {
+                            val id = it.getLong(idCol)
+                            val uri = ContentUris.withAppendedId(
+                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                                id
+                            )
+                            mediaList.add(uri)
+                        }
+                    }
+                }
+                
+                _state.update { it.copy(localMediaList = mediaList) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun sendTextOrMedia(context: Context, text: String, onSentSuccess: () -> Unit) {
+        val trimmed = text.trim()
+        val mediaList = _state.value.selectedMedia
+
+        if (trimmed.isEmpty() && mediaList.isEmpty()) return
+
+        _state.update { it.copy(isSending = true, error = null) }
+
+        viewModelScope.launch {
+            try {
+                if (mediaList.isEmpty()) {
+                    chatRepository.sendMessage(roomId, text)
+                } else {
+                    for (i in mediaList.indices) {
+                        val mediaUri = mediaList[i]
+                        val isLast = i == mediaList.size - 1
+                        val msgText = if (isLast && trimmed.isNotEmpty()) text else null
+                        chatRepository.uploadFile(roomId, mediaUri, context, msgText, null)
+                    }
+                }
+                clearSelection()
+                _state.update { it.copy(isAttachmentPanelOpen = false) }
+                withContext(Dispatchers.Main) {
+                    onSentSuccess()
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = "Ошибка при отправке: ${e.message}") }
+            } finally {
+                _state.update { it.copy(isSending = false) }
+            }
+        }
+    }
+
+    fun sendDocument(context: Context, uri: Uri) {
+        _state.update { it.copy(isSending = true, error = null) }
+        viewModelScope.launch {
+            try {
+                chatRepository.uploadFile(roomId, uri, context, null, null)
+                _state.update { it.copy(isAttachmentPanelOpen = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = "Ошибка при отправке документа: ${e.message}") }
+            } finally {
+                _state.update { it.copy(isSending = false) }
             }
         }
     }

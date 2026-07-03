@@ -58,6 +58,29 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.animation.animateContentSize
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -100,6 +123,8 @@ import com.eltex.messengerapp.ui.theme.BrandDark
 import com.eltex.messengerapp.ui.theme.BrandMinor
 import com.eltex.messengerapp.ui.theme.BrandPrimary
 import kotlinx.serialization.json.JsonElement
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -125,6 +150,9 @@ fun ChatScreen(
     var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
     var fullscreenVideoUrl by remember { mutableStateOf<String?>(null) }
     var messageText by remember { mutableStateOf("") }
+    val lazyListState = rememberLazyListState()
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -275,7 +303,6 @@ fun ChatScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     } else {
-                        val lazyListState = rememberLazyListState()
                         LaunchedEffect(state.messages.size) {
                             if (lazyListState.firstVisibleItemIndex <= 1) {
                                 lazyListState.animateScrollToItem(0)
@@ -285,6 +312,7 @@ fun ChatScreen(
                         LazyColumn(
                             state = lazyListState,
                             reverseLayout = true,
+                            userScrollEnabled = !state.isSending,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp),
@@ -334,93 +362,137 @@ fun ChatScreen(
                     }
                 }
 
-                // Message Input Area (Visual mockup as per task description)
-                Column(
+                // Message Input Area
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White)
-                        .imePadding()
+                        .animateContentSize()
                 ) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFFEFEFEF))
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .imePadding()
                     ) {
-                        BasicTextField(
-                            value = messageText,
-                            onValueChange = { messageText = it },
-                            textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(vertical = 12.dp),
-                            decorationBox = { innerTextField ->
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    if (messageText.isEmpty()) {
-                                        Text(
-                                            text = "Текст сообщения",
-                                            color = Color(0xFFC7C7CC),
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                    innerTextField()
-                                }
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        IconButton(
-                            onClick = {},
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AttachFile,
-                                contentDescription = "Прикрепить",
-                                tint = BrandPrimary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        IconButton(
-                            onClick = {},
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Mic,
-                                contentDescription = "Голосовое сообщение",
-                                tint = BrandPrimary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .background(BrandPrimary, CircleShape)
-                                .clickable {
-                                    if (messageText.isNotBlank()) {
-                                        messageText = ""
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color(0xFFEFEFEF))
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            BasicTextField(
+                                value = messageText,
+                                onValueChange = { messageText = it },
+                                textStyle = TextStyle(color = Color.Black, fontSize = 16.sp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(vertical = 12.dp)
+                                    .onFocusChanged { focusState ->
+                                        if (focusState.isFocused && lazyListState.firstVisibleItemIndex <= 2) {
+                                            coroutineScope.launch {
+                                                kotlinx.coroutines.delay(200)
+                                                lazyListState.animateScrollToItem(0)
+                                            }
+                                        }
+                                    },
+                                maxLines = 5,
+                                decorationBox = { innerTextField ->
+                                    Box(modifier = Modifier.fillMaxWidth()) {
+                                        if (messageText.isEmpty()) {
+                                            Text(
+                                                text = "Текст сообщения",
+                                                color = Color(0xFFC7C7CC),
+                                                fontSize = 16.sp
+                                            )
+                                        }
+                                        innerTextField()
                                     }
-                                },
+                                }
+                            )
+
+                            val canSend = messageText.trim().isNotEmpty() || state.selectedMedia.isNotEmpty()
+
+                            if (!state.isAttachmentPanelOpen) {
+                                IconButton(
+                                    onClick = {
+                                        keyboardController?.hide()
+                                        viewModel.setAttachmentPanelOpen(true)
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AttachFile,
+                                        contentDescription = "Прикрепить",
+                                        tint = BrandPrimary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                if (canSend) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(BrandPrimary, CircleShape)
+                                            .clickable {
+                                                viewModel.sendTextOrMedia(context, messageText) {
+                                                    messageText = ""
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Outlined.Send,
+                                            contentDescription = "Отправить",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                if (canSend) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(BrandPrimary, CircleShape)
+                                            .clickable {
+                                                viewModel.sendTextOrMedia(context, messageText) {
+                                                    messageText = ""
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Outlined.Send,
+                                            contentDescription = "Отправить",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (state.isAttachmentPanelOpen) {
+                            AttachmentSelectionPanel(state, viewModel, context)
+                        }
+                    }
+
+                    if (state.isSending) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(Color.White.copy(alpha = 0.7f))
+                                .pointerInput(Unit) {},
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.Send,
-                                contentDescription = "Отправить",
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            CircularProgressIndicator(color = BrandPrimary)
                         }
                     }
                 }
@@ -980,5 +1052,185 @@ fun openFile(context: Context, file: File) {
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Не удалось открыть файл: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+}
+
+@Composable
+fun AttachmentSelectionPanel(
+    state: ChatState,
+    viewModel: ChatViewModel,
+    context: Context
+) {
+    val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (state.activeTab == 0) Manifest.permission.READ_MEDIA_IMAGES else Manifest.permission.READ_MEDIA_VIDEO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+    val hasPermission = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+
+    LaunchedEffect(state.activeTab, hasPermission) {
+        viewModel.updatePermissionState(hasPermission, context)
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        viewModel.updatePermissionState(granted, context)
+    }
+
+    val docLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.sendDocument(context, uri)
+        }
+    }
+
+    val gridState = rememberLazyGridState()
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (available.y > 10f) {
+                    if (state.activeTab == 2 || (gridState.firstVisibleItemIndex == 0 && gridState.firstVisibleItemScrollOffset == 0)) {
+                        viewModel.setAttachmentPanelOpen(false)
+                    }
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .nestedScroll(nestedScrollConnection)
+            .padding(bottom = 16.dp)
+    ) {
+        // Drag handle
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        if (dragAmount.y > 10f) {
+                            viewModel.setAttachmentPanelOpen(false)
+                        }
+                    }
+                }
+                .padding(vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp, 4.dp)
+                    .background(Color(0xFFD1D1D6), RoundedCornerShape(2.dp))
+            )
+        }
+
+        TabRow(
+            selectedTabIndex = state.activeTab,
+            containerColor = Color.White,
+            contentColor = BrandPrimary
+        ) {
+            listOf("Фото", "Видео", "Документы").forEachIndexed { index, title ->
+                Tab(
+                    selected = state.activeTab == index,
+                    onClick = { viewModel.setActiveTab(index, context) },
+                    text = { Text(title, fontSize = 14.sp) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+        ) {
+            if (state.activeTab == 0 || state.activeTab == 1) {
+                if (!hasPermission) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Требуется разрешение для доступа к галерее", color = Color.Gray, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { launcher.launch(permission) },
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandPrimary)
+                        ) {
+                            Text("Предоставить", color = Color.White)
+                        }
+                    }
+                } else {
+                    if (state.localMediaList.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Файлы не найдены", color = Color.Gray, fontSize = 14.sp)
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
+                            state = gridState,
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(state.localMediaList) { uri ->
+                                val isSelected = state.selectedMedia.contains(uri)
+                                Box(
+                                    modifier = Modifier
+                                        .aspectRatio(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable(enabled = !state.isSending) {
+                                            viewModel.toggleMediaSelection(uri)
+                                        }
+                                ) {
+                                    AsyncImage(
+                                        model = uri,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(Color(0x6625CBA3)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Выбрано",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(32.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = { docLauncher.launch("*/*") },
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandPrimary),
+                        enabled = !state.isSending
+                    ) {
+                        Text("Внутреннее хранилище", color = Color.White)
+                    }
+                }
+            }
+        }
     }
 }

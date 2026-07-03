@@ -43,6 +43,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -162,6 +166,10 @@ fun ChatsScreen(
     val displayedChats = viewModel.getDisplayedChats()
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newRoomName by remember { mutableStateOf("") }
+    var newRoomType by remember { mutableStateOf("c") } // "c", "p", "d"
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
@@ -199,7 +207,7 @@ fun ChatsScreen(
                         fontSize = 20.sp
                     )
                     IconButton(
-                        onClick = { /* Visual only */ },
+                        onClick = { viewModel.loadInitialUsers(); showCreateDialog = true },
                         modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Icon(
@@ -369,6 +377,95 @@ fun ChatsScreen(
                 }
             }
         }
+    }
+
+    if (showCreateDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Новое сообщение") },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().height(350.dp)) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = viewModel.userSearchQuery,
+                        onValueChange = { viewModel.onUserSearchQueryChanged(it) },
+                        label = { Text("Поиск пользователя") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(imageVector = Icons.Default.Search, contentDescription = null)
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (viewModel.usersList.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("Пользователи не найдены", color = Color.Gray, fontSize = 14.sp)
+                            }
+                        } else {
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                items(viewModel.usersList) { user ->
+                                    val name = user.name ?: user.username ?: "Пользователь"
+                                    val username = user.username ?: ""
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                viewModel.createDirectMessage(username) {
+                                                    showCreateDialog = false
+                                                }
+                                            }
+                                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(Color.LightGray),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = name.take(1).uppercase(),
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = name,
+                                                color = Color.Black,
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            if (username.isNotEmpty()) {
+                                                Text(
+                                                    text = "@$username",
+                                                    color = Color.Gray,
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showCreateDialog = false
+                    }
+                ) {
+                    Text("Закрыть")
+                }
+            }
+        )
     }
 }
 

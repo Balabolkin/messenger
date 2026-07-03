@@ -6,7 +6,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -335,4 +338,69 @@ class ChatsRepositoryImpl @Inject constructor(
         val unsubMsg = """{"msg":"unsub","id":"sub-room-messages-$roomId"}"""
         webSocket?.send(unsubMsg)
     }
+
+    override suspend fun createRoom(name: String, type: String) {
+        val endpoint = when (type) {
+            "c" -> "api/v1/channels.create"
+            "p" -> "api/v1/groups.create"
+            "d" -> "api/v1/im.create"
+            else -> "api/v1/channels.create"
+        }
+        val response: HttpResponse = if (type == "d") {
+            client.post(endpoint) {
+                setBody(CreateImRequest(username = name))
+            }
+        } else {
+            client.post(endpoint) {
+                setBody(CreateRoomRequest(name = name))
+            }
+        }
+        if (response.status.value == 200 || response.status.value == 201) {
+            refresh()
+        } else {
+            val errorBody = response.body<String>()
+            throw Exception("Failed to create chat: $errorBody")
+        }
+    }
+
+    override suspend fun searchUsers(query: String): List<com.eltex.messengerapp.feature.chats.domain.UserDto> {
+        val q = if (query.isBlank()) "{}" else """{"${"$"}or":[{"username":{"${"$"}regex":"$query","${"$"}options":"i"}},{"name":{"${"$"}regex":"$query","${"$"}options":"i"}}]}"""
+        val response: HttpResponse = client.get("api/v1/users.list") {
+            parameter("query", q)
+            parameter("count", 50)
+        }
+        if (response.status.value == 200) {
+            val res: UsersListResponse = response.body()
+            return res.users ?: emptyList()
+        }
+        return emptyList()
+    }
+
+    override suspend fun createDirectMessage(username: String) {
+        val response: HttpResponse = client.post("api/v1/im.create") {
+            setBody(CreateImRequest(username = username))
+        }
+        if (response.status.value == 200 || response.status.value == 201) {
+            refresh()
+        } else {
+            val errorBody = response.body<String>()
+            throw Exception("Failed to create direct message: $errorBody")
+        }
+    }
 }
+
+@Serializable
+data class CreateRoomRequest(
+    val name: String
+)
+
+@Serializable
+data class CreateImRequest(
+    val username: String
+)
+
+@Serializable
+data class UsersListResponse(
+    val users: List<com.eltex.messengerapp.feature.chats.domain.UserDto>? = null,
+    val success: Boolean
+)
