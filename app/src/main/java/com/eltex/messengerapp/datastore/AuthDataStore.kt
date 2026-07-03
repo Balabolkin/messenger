@@ -4,6 +4,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.eltex.messengerapp.data.database.dao.ChatDao
+import com.eltex.messengerapp.data.database.dao.MessageDao
+import com.eltex.messengerapp.data.database.dao.UserDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -59,6 +62,19 @@ class AuthDataStore @Inject constructor(
     suspend fun logout() {
         clear()
     }
+
+    suspend fun clearAllData(
+        chatDao: ChatDao,
+        messageDao: MessageDao,
+        userDao: UserDao
+    ) {
+        clear()
+
+        chatDao.clearChats()
+        messageDao.clearAllMessages()
+        userDao.clearUsers()
+    }
+
 
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("auth_token")

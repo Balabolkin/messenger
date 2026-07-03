@@ -1,5 +1,6 @@
 package com.eltex.messengerapp.feature.chats.data
 
+import com.eltex.messengerapp.data.database.dao.ChatDao
 import com.eltex.messengerapp.datastore.AuthDataStore
 import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
 import io.ktor.client.HttpClient
@@ -36,7 +37,8 @@ import javax.inject.Singleton
 class ChatsRepositoryImpl @Inject constructor(
     private val client: HttpClient,
     private val okHttpClient: OkHttpClient,
-    private val authDataStore: AuthDataStore
+    private val authDataStore: AuthDataStore,
+    private val chatDao: ChatDao,
 ) : ChatsRepository {
 
     private val json = Json {
@@ -49,6 +51,16 @@ class ChatsRepositoryImpl @Inject constructor(
     private val _chatsFlow = MutableStateFlow<List<SubscriptionDto>>(emptyList())
     override val chatsFlow: Flow<List<SubscriptionDto>> = _chatsFlow.asStateFlow()
 
+    init {
+        repositoryScope.launch {
+            chatDao.getAllChats().collect { entities ->
+                val subs = entities.map { it.toSubscriptionDto() }
+                _chatsFlow.value = subs
+                allSubscriptions = subs
+                updateChatsFlow()
+            }
+        }
+    }
     private val roomListeners = java.util.concurrent.ConcurrentHashMap<String, (MessageDto) -> Unit>()
 
     private var allSubscriptions = emptyList<SubscriptionDto>()
@@ -91,6 +103,8 @@ class ChatsRepositoryImpl @Inject constructor(
             if (response.status.value == 200) {
                 val subsResponse: SubscriptionsResponse = response.body()
                 val updatedSubs = subsResponse.update ?: emptyList()
+                chatDao.insertChats(updatedSubs.map { it.toEntity() })
+
                 allSubscriptions = updatedSubs.sortedWith(ChatsComparator)
                 currentPage = 1
                 updateChatsFlow()
@@ -386,6 +400,10 @@ class ChatsRepositoryImpl @Inject constructor(
             val errorBody = response.body<String>()
             throw Exception("Failed to create direct message: $errorBody")
         }
+    }
+
+    suspend fun clearAllData() {
+        chatDao.clearChats()
     }
 }
 

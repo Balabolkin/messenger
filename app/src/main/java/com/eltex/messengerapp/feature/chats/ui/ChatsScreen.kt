@@ -6,9 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -34,12 +33,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,21 +49,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.eltex.messengerapp.feature.chats.data.AttachmentDto
+import coil.compose.SubcomposeAsyncImage
 import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
-import com.eltex.messengerapp.feature.chats.data.MessageDto
 import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
 import com.eltex.messengerapp.ui.theme.AppColors
-import com.eltex.messengerapp.ui.theme.BrandPrimary
 import com.eltex.messengerapp.ui.theme.BrandDark
-import com.eltex.messengerapp.ui.theme.BrandMinor
-import coil.compose.SubcomposeAsyncImage
+import com.eltex.messengerapp.ui.theme.BrandPrimary
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDateTime
@@ -160,15 +153,14 @@ private fun getLastMessageText(chat: SubscriptionDto): String {
 fun ChatsScreen(
     viewModel: ChatsViewModel,
     onChatClick: (SubscriptionDto) -> Unit,
+    onCreateChatClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state
     val displayedChats = viewModel.getDisplayedChats()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var newRoomName by remember { mutableStateOf("") }
-    var newRoomType by remember { mutableStateOf("c") } // "c", "p", "d"
+
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -207,7 +199,7 @@ fun ChatsScreen(
                         fontSize = 20.sp
                     )
                     IconButton(
-                        onClick = { viewModel.loadInitialUsers(); showCreateDialog = true },
+                        onClick = onCreateChatClick,
                         modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Icon(
@@ -378,95 +370,6 @@ fun ChatsScreen(
             }
         }
     }
-
-    if (showCreateDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showCreateDialog = false },
-            title = { Text("Новое сообщение") },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth().height(350.dp)) {
-                    androidx.compose.material3.OutlinedTextField(
-                        value = viewModel.userSearchQuery,
-                        onValueChange = { viewModel.onUserSearchQueryChanged(it) },
-                        label = { Text("Поиск пользователя") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Search, contentDescription = null)
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (viewModel.usersList.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Пользователи не найдены", color = Color.Gray, fontSize = 14.sp)
-                            }
-                        } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(viewModel.usersList) { user ->
-                                    val name = user.name ?: user.username ?: "Пользователь"
-                                    val username = user.username ?: ""
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                viewModel.createDirectMessage(username) {
-                                                    showCreateDialog = false
-                                                }
-                                            }
-                                            .padding(vertical = 10.dp, horizontal = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(CircleShape)
-                                                .background(Color.LightGray),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = name.take(1).uppercase(),
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(
-                                                text = name,
-                                                color = Color.Black,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            if (username.isNotEmpty()) {
-                                                Text(
-                                                    text = "@$username",
-                                                    color = Color.Gray,
-                                                    fontSize = 12.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = {
-                        showCreateDialog = false
-                    }
-                ) {
-                    Text("Закрыть")
-                }
-            }
-        )
-    }
 }
 
 @Composable
@@ -476,7 +379,7 @@ fun ChatRowItem(
     onClick: () -> Unit
 ) {
     val displayName = chat.fname ?: chat.name ?: "Чат"
-    
+
     // Avatar url logic
     val avatarUrl = if (chat.t == "d") {
         "https://study-chat.eltex-co.ru/avatar/${chat.name}"
@@ -513,7 +416,7 @@ fun ChatRowItem(
                         InitialsAvatar(name = displayName)
                     }
                 )
-                
+
                 // Online/Verified status badge for direct chats (t == "d") except Favorites
                 if (chat.t == "d" && displayName != "Избранное") {
                     Box(
@@ -558,7 +461,9 @@ fun ChatRowItem(
                         Icon(
                             imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Check,
                             contentDescription = if (isRead) "Просмотрено" else "Доставлено",
-                            tint = if (isRead) Color(0xFF25CBA3) else AppColors.TextSecondary.copy(alpha = 0.6f),
+                            tint = if (isRead) Color(0xFF25CBA3) else AppColors.TextSecondary.copy(
+                                alpha = 0.6f
+                            ),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -568,8 +473,9 @@ fun ChatRowItem(
                     val lastMsgTime = ChatsDateParser.parse(chat.lastMessage?.ts)
                         ?: ChatsDateParser.parse(chat.ls)
                         ?: ChatsDateParser.parse(chat.ts)
-                    val timeText = if (lastMsgTime != null) ChatsDateFormatter.format(lastMsgTime) else ""
-                    
+                    val timeText =
+                        if (lastMsgTime != null) ChatsDateFormatter.format(lastMsgTime) else ""
+
                     Text(
                         text = timeText,
                         color = AppColors.TextSecondary,
@@ -582,16 +488,17 @@ fun ChatRowItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Prefix and message text
                     val rawMsgText = getLastMessageText(chat)
-                    
+
                     // Group chat prefix formatting
-                    val prefix = if (chat.t != "d" && chat.lastMessage != null && rawMsgText != "Сообщений нет") {
-                        val lastMsg = chat.lastMessage
-                        if (lastMsg.u?._id == currentUserId) {
-                            "Вы: "
-                        } else {
-                            "${lastMsg.u?.name ?: lastMsg.u?.username ?: "Пользователь"}: "
-                        }
-                    } else ""
+                    val prefix =
+                        if (chat.t != "d" && chat.lastMessage != null && rawMsgText != "Сообщений нет") {
+                            val lastMsg = chat.lastMessage
+                            if (lastMsg.u?._id == currentUserId) {
+                                "Вы: "
+                            } else {
+                                "${lastMsg.u?.name ?: lastMsg.u?.username ?: "Пользователь"}: "
+                            }
+                        } else ""
 
                     val messageContent = "$prefix$rawMsgText"
 
@@ -627,7 +534,7 @@ fun ChatRowItem(
                 }
             }
         }
-        
+
         // Horizontal divider starting after the avatar
         Box(
             modifier = Modifier

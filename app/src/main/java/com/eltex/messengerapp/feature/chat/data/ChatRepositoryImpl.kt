@@ -1,5 +1,7 @@
 package com.eltex.messengerapp.feature.chat.data
 
+import android.util.Log.e
+import com.eltex.messengerapp.data.database.dao.MessageDao
 import com.eltex.messengerapp.feature.chat.domain.ChatRepository
 import com.eltex.messengerapp.feature.chats.data.HistoryResponseDto
 import com.eltex.messengerapp.feature.chats.data.MessageDto
@@ -15,11 +17,15 @@ import io.ktor.client.request.forms.formData
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.client.statement.HttpResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.net.Uri
@@ -35,12 +41,23 @@ data class PostMessageRequest(
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val client: HttpClient,
+    private val messageDao: MessageDao,
     private val chatsRepository: ChatsRepository
 ) : ChatRepository {
 
     private val _messagesState = MutableStateFlow<Map<String, List<MessageDto>>>(emptyMap())
+    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun getMessagesFlow(roomId: String, roomType: String): Flow<List<MessageDto>> {
+        repositoryScope.launch {
+            messageDao.getMessagesForRoom(roomId).collect { entities ->
+                val messages = entities.map { it.toMessageDto() }
+                _messagesState.update { current ->
+                    current + (roomId to messages)
+                }
+            }
+        }
+
         return channelFlow {
             chatsRepository.subscribeToRoomMessages(roomId) { newMessage ->
                 _messagesState.update { current ->
@@ -71,25 +88,31 @@ class ChatRepositoryImpl @Inject constructor(
             else -> "api/v1/channels.history"
         }
 
-        val response: HttpResponse = client.get(endpoint) {
-            parameter("roomId", roomId)
-            parameter("count", 100)
-        }
+        try {
+            val response: HttpResponse = client.get(endpoint) {
+                parameter("roomId", roomId)
+                parameter("count", 100)
+            }
 
-        if (response.status.value == 200) {
-            val historyResponse: HistoryResponseDto = response.body()
-            if (historyResponse.success) {
-                val messages = historyResponse.messages
-                _messagesState.update { current ->
-                    current + (roomId to messages)
+            if (response.status.value == 200) {
+                val historyResponse: HistoryResponseDto = response.body()
+                if (historyResponse.success) {
+                    val messages = historyResponse.messages
+
+                    messageDao.insertMessages(messages.map { it.toEntity(roomId) })
+
+                    _messagesState.update { current ->
+                        current + (roomId to messages)
+                    }
+                } else {
+                    throw Exception("Failed to load chat history")
                 }
             } else {
-                throw Exception("Failed to load chat history")
+                val errorBody = response.body<String>()
+                throw Exception("Failed to load chat history: $errorBody")
             }
-        } else {
-            val errorBody = response.body<String>()
-            throw Exception("Failed to load chat history: $errorBody")
-        }
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 
     override suspend fun sendMessage(roomId: String, text: String) {
@@ -144,6 +167,13 @@ class ChatRepositoryImpl @Inject constructor(
 
         if (response.status.value != 200) {
             throw Exception("Failed to upload file: ${response.status}")
+        }
+    }
+}
+    suspend fun clearMessagesForRoom(roomId: String) {
+        messageDao.clearMessagesForRoom(roomId)
+        _messagesState.update { current ->
+            current - roomId
         }
     }
 }

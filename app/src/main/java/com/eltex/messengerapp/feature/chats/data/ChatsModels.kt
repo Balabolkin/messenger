@@ -1,5 +1,7 @@
 package com.eltex.messengerapp.feature.chats.data
 
+import com.eltex.messengerapp.data.database.entities.ChatEntity
+import com.eltex.messengerapp.data.database.entities.MessageEntity
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -32,7 +34,28 @@ data class MessageDto(
     val u: UserDto? = null,
     val attachments: List<AttachmentDto>? = null,
     val unread: Boolean? = null
-)
+) {
+    fun toEntity(roomId: String): MessageEntity {
+        return MessageEntity(
+            _id = _id,
+            rid = roomId,
+            msg = msg,
+            ts = ChatsDateParser.parse(ts)?.toString(),
+            userId = u?._id,
+            username = u?.username,
+            fileUrl = attachments?.firstOrNull()?.image_url
+                ?: attachments?.firstOrNull()?.video_url,
+            fileName = attachments?.firstOrNull()?.title,
+            fileType = when {
+                attachments?.firstOrNull()?.image_url != null -> "image"
+                attachments?.firstOrNull()?.video_url != null -> "video"
+                else -> null
+            },
+            pinned = false
+        )
+    }
+}
+
 
 @Serializable
 data class SubscriptionDto(
@@ -46,7 +69,25 @@ data class SubscriptionDto(
     val ts: JsonElement? = null,
     val ls: JsonElement? = null,
     val lastMessage: MessageDto? = null
-)
+){
+    fun toEntity(): ChatEntity {
+        return ChatEntity(
+            _id = _id,
+            rid = rid,
+            name = name,
+            fname = fname,
+            t = t,
+            unread = unread,
+            alert = alert,
+            ts = ChatsDateParser.parse(ts)?.toString(),
+            ls = ChatsDateParser.parse(ls)?.toString(),
+            lastMessageText = lastMessage?.msg,
+            lastMessageTs = ChatsDateParser.parse(lastMessage?.ts)?.toString(),
+            lastMessageUserId = lastMessage?.u?._id,
+            lastMessageUsername = lastMessage?.u?.username
+        )
+    }
+}
 
 @Serializable
 data class SubscriptionsResponse(

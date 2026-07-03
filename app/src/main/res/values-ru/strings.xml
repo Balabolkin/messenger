@@ -25,4 +25,18 @@
     <string name="logout_dialog_message">Вы уверены, что хотите выйти?</string>
     <string name="logout_dialog_confirm">Выйти</string>
     <string name="logout_dialog_dismiss">Отменить</string>
+
+    <string name="create_chat_title">Новый чат</string>
+    <string name="create_chat_cancel">Отменить</string>
+    <string name="create_chat_search_hint">Поиск по контактам</string>
+    <string name="create_chat_contacts_header">Контакты</string>
+    <string name="create_chat_error_title">Ошибка</string>
+    <string name="create_chat_error_loading">Не удалось загрузить пользователей</string>
+    <string name="create_chat_error_search">Ошибка поиска</string>
+    <string name="create_chat_error_empty">Введите минимум 2 символа для поиска</string>
+    <string name="create_chat_error_not_found">Пользователь "%s" не найден</string>
+    <string name="create_chat_error_create">Проблема при создании чата с указанным пользователем, попробуйте позднее</string>
+    <string name="create_chat_retry">Повторить</string>
+    <string name="create_chat_ok">Ок</string>
+    <string name="create_chat_clear">Очистить</string>
 </resources>

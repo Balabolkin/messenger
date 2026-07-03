@@ -5,6 +5,7 @@ data class User(
     val firstName: String,
     val lastName: String,
     val patronymic: String? = null,
+    val username: String,
     val avatarUrl: String? = null
 ) {
     fun getFullName(): String {

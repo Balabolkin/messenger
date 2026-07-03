@@ -13,7 +13,7 @@ data class UserInfoResponseDto(
 data class UserDto(
     val _id: String,
     val name: String?,
-    val username: String?,
+    val username: String,
     val avatarETag: String? = null,
     val emails: List<EmailDto>? = null
 ) {
@@ -28,6 +28,7 @@ data class UserDto(
             firstName = firstName,
             lastName = lastName,
             patronymic = patronymic,
+            username = username,
             avatarUrl = null
         )
     }
