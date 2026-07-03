@@ -24,4 +24,18 @@
     <string name="logout_dialog_message">Are you sure you want to log out?</string>
     <string name="logout_dialog_confirm">Log out</string>
     <string name="logout_dialog_dismiss">Cancel</string>
+
+    <string name="create_chat_title">New chat</string>
+    <string name="create_chat_cancel">Cancel</string>
+    <string name="create_chat_search_hint">Search contacts</string>
+    <string name="create_chat_contacts_header">Contacts</string>
+    <string name="create_chat_error_title">Error</string>
+    <string name="create_chat_error_loading">Failed to load users</string>
+    <string name="create_chat_error_search">Search error</string>
+    <string name="create_chat_error_empty">Enter at least 2 characters to search</string>
+    <string name="create_chat_error_not_found">User "%s" not found</string>
+    <string name="create_chat_error_create">Problem creating chat with this user, please try again later</string>
+    <string name="create_chat_retry">Retry</string>
+    <string name="create_chat_ok">OK</string>
+    <string name="create_chat_clear">Clear</string>
 </resources>

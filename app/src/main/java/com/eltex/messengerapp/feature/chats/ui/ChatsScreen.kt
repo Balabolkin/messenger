@@ -6,9 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +15,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -34,12 +33,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -50,21 +45,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.eltex.messengerapp.feature.chats.data.AttachmentDto
+import coil.compose.SubcomposeAsyncImage
 import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
-import com.eltex.messengerapp.feature.chats.data.MessageDto
 import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
 import com.eltex.messengerapp.ui.theme.AppColors
-import com.eltex.messengerapp.ui.theme.BrandPrimary
 import com.eltex.messengerapp.ui.theme.BrandDark
-import com.eltex.messengerapp.ui.theme.BrandMinor
-import coil.compose.SubcomposeAsyncImage
+import com.eltex.messengerapp.ui.theme.BrandPrimary
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDateTime
@@ -156,11 +149,13 @@ private fun getLastMessageText(chat: SubscriptionDto): String {
 fun ChatsScreen(
     viewModel: ChatsViewModel,
     onChatClick: (SubscriptionDto) -> Unit,
+    onCreateChatClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state
     val displayedChats = viewModel.getDisplayedChats()
     val lifecycleOwner = LocalLifecycleOwner.current
+
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -199,7 +194,7 @@ fun ChatsScreen(
                         fontSize = 20.sp
                     )
                     IconButton(
-                        onClick = { /* Visual only */ },
+                        onClick = onCreateChatClick,
                         modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Icon(
@@ -379,7 +374,7 @@ fun ChatRowItem(
     onClick: () -> Unit
 ) {
     val displayName = chat.fname ?: chat.name ?: "Чат"
-    
+
     // Avatar url logic
     val avatarUrl = if (chat.t == "d") {
         "https://study-chat.eltex-co.ru/avatar/${chat.name}"
@@ -416,7 +411,7 @@ fun ChatRowItem(
                         InitialsAvatar(name = displayName)
                     }
                 )
-                
+
                 // Online/Verified status badge for direct chats (t == "d") except Favorites
                 if (chat.t == "d" && displayName != "Избранное") {
                     Box(
@@ -461,7 +456,9 @@ fun ChatRowItem(
                         Icon(
                             imageVector = if (isRead) Icons.Default.DoneAll else Icons.Default.Check,
                             contentDescription = if (isRead) "Просмотрено" else "Доставлено",
-                            tint = if (isRead) Color(0xFF25CBA3) else AppColors.TextSecondary.copy(alpha = 0.6f),
+                            tint = if (isRead) Color(0xFF25CBA3) else AppColors.TextSecondary.copy(
+                                alpha = 0.6f
+                            ),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -471,8 +468,9 @@ fun ChatRowItem(
                     val lastMsgTime = ChatsDateParser.parse(chat.lastMessage?.ts)
                         ?: ChatsDateParser.parse(chat.ls)
                         ?: ChatsDateParser.parse(chat.ts)
-                    val timeText = if (lastMsgTime != null) ChatsDateFormatter.format(lastMsgTime) else ""
-                    
+                    val timeText =
+                        if (lastMsgTime != null) ChatsDateFormatter.format(lastMsgTime) else ""
+
                     Text(
                         text = timeText,
                         color = AppColors.TextSecondary,
@@ -485,16 +483,17 @@ fun ChatRowItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Prefix and message text
                     val rawMsgText = getLastMessageText(chat)
-                    
+
                     // Group chat prefix formatting
-                    val prefix = if (chat.t != "d" && chat.lastMessage != null && rawMsgText != "Сообщений нет") {
-                        val lastMsg = chat.lastMessage
-                        if (lastMsg.u?._id == currentUserId) {
-                            "Вы: "
-                        } else {
-                            "${lastMsg.u?.name ?: lastMsg.u?.username ?: "Пользователь"}: "
-                        }
-                    } else ""
+                    val prefix =
+                        if (chat.t != "d" && chat.lastMessage != null && rawMsgText != "Сообщений нет") {
+                            val lastMsg = chat.lastMessage
+                            if (lastMsg.u?._id == currentUserId) {
+                                "Вы: "
+                            } else {
+                                "${lastMsg.u?.name ?: lastMsg.u?.username ?: "Пользователь"}: "
+                            }
+                        } else ""
 
                     val messageContent = "$prefix$rawMsgText"
 
@@ -530,7 +529,7 @@ fun ChatRowItem(
                 }
             }
         }
-        
+
         // Horizontal divider starting after the avatar
         Box(
             modifier = Modifier
