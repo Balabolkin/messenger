@@ -10,4 +10,6 @@ interface ChatRepository {
     suspend fun loadHistory(roomId: String, roomType: String)
     suspend fun sendMessage(roomId: String, text: String)
     suspend fun uploadFile(roomId: String, fileUri: Uri, context: Context, msg: String? = null, description: String? = null)
+    suspend fun markAsRead(roomId: String)
+    suspend fun getMembersCount(roomId: String): Int
 }

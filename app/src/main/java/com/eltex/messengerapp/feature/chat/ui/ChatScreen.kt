@@ -3,8 +3,8 @@ package com.eltex.messengerapp.feature.chat.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.MediaController
 import android.widget.Toast
+import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -35,7 +35,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.AttachFile
@@ -47,21 +47,17 @@ import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.items
@@ -96,7 +92,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -116,12 +112,12 @@ import com.eltex.messengerapp.R
 import com.eltex.messengerapp.feature.chats.data.AttachmentDto
 import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
 import com.eltex.messengerapp.feature.chats.data.MessageDto
-import com.eltex.messengerapp.feature.chats.ui.ChatsDateFormatter
 import com.eltex.messengerapp.feature.chats.ui.InitialsAvatar
 import com.eltex.messengerapp.ui.theme.AppColors
 import com.eltex.messengerapp.ui.theme.BrandDark
 import com.eltex.messengerapp.ui.theme.BrandMinor
 import com.eltex.messengerapp.ui.theme.BrandPrimary
+import com.eltex.messengerapp.util.toSecureUrl
 import kotlinx.serialization.json.JsonElement
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -132,6 +128,10 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.TextLinkStyles
+
+private const val DEFAULT_MEMBERS_COUNT = 32
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,6 +139,7 @@ fun ChatScreen(
     roomId: String,
     roomName: String,
     roomType: String,
+    avatarName: String? = null,
     onBack: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
@@ -180,11 +181,13 @@ fun ChatScreen(
                                 .size(36.dp)
                                 .clip(CircleShape)
                         ) {
-                            val avatarUrl = if (roomType == "d") {
-                                "https://study-chat.eltex-co.ru/avatar/$roomName"
-                            } else {
-                                "https://study-chat.eltex-co.ru/avatar/room/$roomId"
-                            }
+                            val avatarUrl = toSecureUrl(
+                                if (roomType == "d") {
+                                    "/avatar/${avatarName ?: roomName}"
+                                } else {
+                                    "/avatar/room/$roomId"
+                                }
+                            )
                             SubcomposeAsyncImage(
                                 model = avatarUrl,
                                 contentDescription = roomName,
@@ -210,14 +213,15 @@ fun ChatScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            if (roomType != "d") {
-                                Text(
-                                    text = "Участники: 32",
-                                    color = Color.White.copy(alpha = 0.7f),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Normal
-                                )
-                            }
+                             if (roomType != "d") {
+                                 val count = state.membersCount ?: DEFAULT_MEMBERS_COUNT
+                                 Text(
+                                     text = stringResource(R.string.members_count, count),
+                                     color = Color.White.copy(alpha = 0.7f),
+                                     fontSize = 12.sp,
+                                     fontWeight = FontWeight.Normal
+                                 )
+                             }
                         }
                     }
                 },
@@ -225,7 +229,7 @@ fun ChatScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ChevronLeft,
-                            contentDescription = "Назад",
+                            contentDescription = stringResource(R.string.back_button_description),
                             tint = Color.White,
                             modifier = Modifier.size(32.dp)
                         )
@@ -235,7 +239,7 @@ fun ChatScreen(
                     IconButton(onClick = {}) {
                         Icon(
                             imageVector = Icons.Default.MoreHoriz,
-                            contentDescription = "Меню",
+                            contentDescription = stringResource(R.string.menu_button_description),
                             tint = Color.White
                         )
                     }
@@ -297,7 +301,7 @@ fun ChatScreen(
                         )
                     } else if (state.messages.isEmpty()) {
                         Text(
-                            text = "Сообщений нет",
+                            text = stringResource(R.string.no_messages),
                             color = AppColors.TextSecondary,
                             fontSize = 16.sp,
                             modifier = Modifier.align(Alignment.Center)
@@ -406,7 +410,7 @@ fun ChatScreen(
                                     Box(modifier = Modifier.fillMaxWidth()) {
                                         if (messageText.isEmpty()) {
                                             Text(
-                                                text = "Текст сообщения",
+                                                text = stringResource(R.string.message_input_placeholder),
                                                 color = Color(0xFFC7C7CC),
                                                 fontSize = 16.sp
                                             )
@@ -428,7 +432,7 @@ fun ChatScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.AttachFile,
-                                        contentDescription = "Прикрепить",
+                                        contentDescription = stringResource(R.string.attach_button_description),
                                         tint = BrandPrimary,
                                         modifier = Modifier.size(24.dp)
                                     )
@@ -449,7 +453,7 @@ fun ChatScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Outlined.Send,
-                                            contentDescription = "Отправить",
+                                            contentDescription = stringResource(R.string.send_button_description),
                                             tint = Color.White,
                                             modifier = Modifier.size(18.dp)
                                         )
@@ -470,7 +474,7 @@ fun ChatScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Outlined.Send,
-                                            contentDescription = "Отправить",
+                                            contentDescription = stringResource(R.string.send_button_description),
                                             tint = Color.White,
                                             modifier = Modifier.size(18.dp)
                                         )
@@ -527,8 +531,8 @@ fun MessageBubbleRow(
     onVideoClick: (String) -> Unit,
     onDocClick: (AttachmentDto) -> Unit
 ) {
-    val senderName = message.u?.name ?: message.u?.username ?: "Пользователь"
-    val avatarUrl = "https://study-chat.eltex-co.ru/avatar/${message.u?.username}"
+    val senderName = message.u?.name ?: message.u?.username ?: stringResource(R.string.default_user_name)
+    val avatarUrl = toSecureUrl("/avatar/${message.u?.username}")
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -599,7 +603,6 @@ fun MessageBubbleRow(
                             }
                             attachment.video_url != null -> {
                                 VideoAttachmentBubble(
-                                    attachment = attachment,
                                     downloadProgress = downloadProgress,
                                     onClick = { onVideoClick(attachment.video_url) }
                                 )
@@ -617,25 +620,8 @@ fun MessageBubbleRow(
                     // Message text
                     if (!message.msg.isNullOrBlank()) {
                         val annotatedText = parseClickableText(message.msg)
-                        val context = LocalContext.current
-                        
-                        ClickableText(
+                        Text(
                             text = annotatedText,
-                            onClick = { offset ->
-                                annotatedText.getStringAnnotations(start = offset, end = offset).firstOrNull()?.let { annotation ->
-                                    try {
-                                        val intent = when (annotation.tag) {
-                                            "URL" -> Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
-                                            "EMAIL" -> Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${annotation.item}"))
-                                            "PHONE" -> Intent(Intent.ACTION_DIAL, Uri.parse("tel:${annotation.item}"))
-                                            else -> null
-                                        }
-                                        intent?.let { context.startActivity(it) }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Не удалось открыть ссылку", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            },
                             style = TextStyle(color = Color.Black, fontSize = 15.sp),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                         )
@@ -683,11 +669,7 @@ fun ImageAttachmentBubble(
     hasText: Boolean,
     onClick: () -> Unit
 ) {
-    val fullUrl = if (attachment.image_url?.startsWith("http") == true) {
-        attachment.image_url
-    } else {
-        "https://study-chat.eltex-co.ru${attachment.image_url}"
-    }
+    val fullUrl = toSecureUrl(attachment.image_url) ?: ""
 
     Box(
         modifier = Modifier
@@ -703,7 +685,7 @@ fun ImageAttachmentBubble(
     ) {
         SubcomposeAsyncImage(
             model = fullUrl,
-            contentDescription = attachment.title ?: "Изображение",
+            contentDescription = attachment.title ?: stringResource(R.string.attachment_type_image),
             modifier = Modifier.fillMaxWidth(),
             contentScale = ContentScale.FillWidth,
             loading = {
@@ -734,7 +716,6 @@ fun ImageAttachmentBubble(
 
 @Composable
 fun VideoAttachmentBubble(
-    attachment: AttachmentDto,
     downloadProgress: Float?,
     onClick: () -> Unit
 ) {
@@ -755,7 +736,7 @@ fun VideoAttachmentBubble(
         ) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
-                contentDescription = "Проиграть",
+                contentDescription = stringResource(R.string.play_video_description),
                 tint = Color.White,
                 modifier = Modifier.size(32.dp)
             )
@@ -784,7 +765,7 @@ fun DocAttachmentBubble(
     downloadProgress: Float?,
     onClick: () -> Unit
 ) {
-    val filename = attachment.title ?: "Документ"
+    val filename = attachment.title ?: stringResource(R.string.attachment_type_document)
     
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -854,7 +835,7 @@ fun FullscreenImageViewer(
     imageUrl: String,
     onDismiss: () -> Unit
 ) {
-    val fullUrl = if (imageUrl.startsWith("http")) imageUrl else "https://study-chat.eltex-co.ru$imageUrl"
+    val fullUrl = toSecureUrl(imageUrl) ?: ""
 
     Box(
         modifier = Modifier
@@ -863,7 +844,7 @@ fun FullscreenImageViewer(
     ) {
         AsyncImage(
             model = fullUrl,
-            contentDescription = "Изображение во весь экран",
+            contentDescription = stringResource(R.string.fullscreen_image_description),
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit
         )
@@ -878,7 +859,7 @@ fun FullscreenImageViewer(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Закрыть",
+                contentDescription = stringResource(R.string.close_description),
                 tint = Color.White
             )
         }
@@ -890,7 +871,7 @@ fun FullscreenVideoPlayer(
     videoUrl: String,
     onDismiss: () -> Unit
 ) {
-    val fullUrl = if (videoUrl.startsWith("http")) videoUrl else "https://study-chat.eltex-co.ru$videoUrl"
+    val fullUrl = toSecureUrl(videoUrl) ?: ""
 
     Box(
         modifier = Modifier
@@ -927,6 +908,7 @@ fun FullscreenVideoPlayer(
     }
 }
 
+
 fun formatFileName(fileName: String, maxLength: Int = 28): String {
     if (fileName.length <= maxLength) return fileName
     val extensionIndex = fileName.lastIndexOf('.')
@@ -950,19 +932,20 @@ fun parseClickableText(text: String): AnnotatedString {
     return buildAnnotatedString {
         append(text)
 
-        val urlRegex = """https?://[^\s]+""".toRegex()
-        urlRegex.findAll(text).forEach { match ->
-            addStyle(
-                style = SpanStyle(
-                    color = BrandPrimary,
-                    textDecoration = TextDecoration.Underline
-                ),
-                start = match.range.first,
-                end = match.range.last + 1
+        val linkStyles = TextLinkStyles(
+            style = SpanStyle(
+                color = BrandPrimary,
+                textDecoration = TextDecoration.Underline
             )
-            addStringAnnotation(
-                tag = "URL",
-                annotation = match.value,
+        )
+
+        val urlRegex = """https?://\S+""".toRegex()
+        urlRegex.findAll(text).forEach { match ->
+            addLink(
+                url = LinkAnnotation.Url(
+                    url = match.value,
+                    styles = linkStyles
+                ),
                 start = match.range.first,
                 end = match.range.last + 1
             )
@@ -970,17 +953,11 @@ fun parseClickableText(text: String): AnnotatedString {
 
         val emailRegex = """[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}""".toRegex()
         emailRegex.findAll(text).forEach { match ->
-            addStyle(
-                style = SpanStyle(
-                    color = BrandPrimary,
-                    textDecoration = TextDecoration.Underline
+            addLink(
+                url = LinkAnnotation.Url(
+                    url = "mailto:${match.value}",
+                    styles = linkStyles
                 ),
-                start = match.range.first,
-                end = match.range.last + 1
-            )
-            addStringAnnotation(
-                tag = "EMAIL",
-                annotation = match.value,
                 start = match.range.first,
                 end = match.range.last + 1
             )
@@ -988,17 +965,11 @@ fun parseClickableText(text: String): AnnotatedString {
 
         val phoneRegex = """\+?[78]\s?\(?\d{3}\)?\s?\d{3}[-\s]?\d{2}[-\s]?\d{2}""".toRegex()
         phoneRegex.findAll(text).forEach { match ->
-            addStyle(
-                style = SpanStyle(
-                    color = BrandPrimary,
-                    textDecoration = TextDecoration.Underline
+            addLink(
+                url = LinkAnnotation.Url(
+                    url = "tel:${match.value}",
+                    styles = linkStyles
                 ),
-                start = match.range.first,
-                end = match.range.last + 1
-            )
-            addStringAnnotation(
-                tag = "PHONE",
-                annotation = match.value,
                 start = match.range.first,
                 end = match.range.last + 1
             )
@@ -1025,11 +996,11 @@ fun formatDateHeader(timestamp: Long): String {
         date == today -> "Сегодня"
         date == yesterday -> "Вчера"
         date.year == today.year -> {
-            val formatter = DateTimeFormatter.ofPattern("d MMMM", Locale("ru"))
+            val formatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("ru"))
             date.format(formatter)
         }
         else -> {
-            val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+            val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("ru"))
             date.format(formatter)
         }
     }
@@ -1112,7 +1083,7 @@ fun AttachmentSelectionPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
+                    detectDragGestures { _, dragAmount ->
                         if (dragAmount.y > 10f) {
                             viewModel.setAttachmentPanelOpen(false)
                         }
@@ -1128,7 +1099,7 @@ fun AttachmentSelectionPanel(
             )
         }
 
-        TabRow(
+        SecondaryTabRow(
             selectedTabIndex = state.activeTab,
             containerColor = Color.White,
             contentColor = BrandPrimary

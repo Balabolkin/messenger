@@ -27,7 +27,7 @@ data class ChatEntity(
                 _id = "temp",
                 rid = rid,
                 msg = lastMessageText,
-                ts = lastMessageTs as? kotlinx.serialization.json.JsonElement,
+                ts = lastMessageTs?.let { kotlinx.serialization.json.JsonPrimitive(it) },
                 u = if (lastMessageUserId != null) {
                     com.eltex.messengerapp.feature.chats.data.UserDto(
                         _id = lastMessageUserId,
@@ -47,8 +47,8 @@ data class ChatEntity(
             t = t ?: "c",
             unread = unread ?: 0,
             alert = alert ?: false,
-            ts = ts as? kotlinx.serialization.json.JsonElement,
-            ls = ls as? kotlinx.serialization.json.JsonElement,
+            ts = ts?.let { kotlinx.serialization.json.JsonPrimitive(it) },
+            ls = ls?.let { kotlinx.serialization.json.JsonPrimitive(it) },
             lastMessage = lastMessage
         )
     }

@@ -25,6 +25,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.File
 import javax.inject.Inject
+import com.eltex.messengerapp.util.toSecureUrl
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -49,6 +50,20 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             _currentUserId.value = authDataStore.getUserId().first()
             loadMessages()
+            if (roomType != "d") {
+                loadMembersCount()
+            }
+        }
+    }
+
+    private fun loadMembersCount() {
+        viewModelScope.launch {
+            try {
+                val count = chatRepository.getMembersCount(roomId)
+                _state.update { it.copy(membersCount = count) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -60,6 +75,14 @@ class ChatViewModel @Inject constructor(
                 _state.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, error = e.message) }
+            }
+        }
+
+        viewModelScope.launch {
+            try {
+                chatRepository.markAsRead(roomId)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
@@ -93,7 +116,7 @@ class ChatViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val fullUrl = if (url.startsWith("http")) url else "https://study-chat.eltex-co.ru$url"
+                val fullUrl = toSecureUrl(url) ?: ""
                 val request = okhttp3.Request.Builder().url(fullUrl).build()
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) throw Exception("Ошибка сервера: ${response.code}")

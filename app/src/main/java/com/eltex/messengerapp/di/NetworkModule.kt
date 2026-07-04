@@ -27,7 +27,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import java.net.UnknownHostException
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 import javax.inject.Singleton
 
 @InstallIn(SingletonComponent::class)
@@ -38,20 +38,96 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(authDataStore: AuthDataStore): OkHttpClient {
         return OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(Duration.ofSeconds(30))
+            .readTimeout(Duration.ofSeconds(30))
+            .writeTimeout(Duration.ofSeconds(30))
             .addInterceptor { chain ->
-                val requestBuilder = chain.request().newBuilder()
-                val token = runBlocking { authDataStore.getToken().first() }
-                val userId = runBlocking { authDataStore.getUserId().first() }
-                if (!token.isNullOrEmpty()) {
-                    requestBuilder.addHeader("X-Auth-Token", token)
+                var request = chain.request()
+                val url = request.url
+                if (url.scheme == "http" && url.host == BuildConfig.BASE_HOST) {
+                    val newUrl = url.newBuilder().scheme("https").build()
+                    request = request.newBuilder().url(newUrl).build()
                 }
-                if (!userId.isNullOrEmpty()) {
-                    requestBuilder.addHeader("X-User-Id", userId)
+                
+                val token = authDataStore.getCachedToken()
+                val userId = authDataStore.getCachedUserId()
+                
+                val requestBuilder = request.newBuilder()
+                if (request.url.host == BuildConfig.BASE_HOST) {
+                    if (!token.isNullOrEmpty()) {
+                        requestBuilder.addHeader("X-Auth-Token", token)
+                    }
+                    if (!userId.isNullOrEmpty()) {
+                        requestBuilder.addHeader("X-User-Id", userId)
+                    }
                 }
+                
+                val path = request.url.encodedPath
+                if ((path.contains("/avatar") || path.contains("/ufs")) && request.url.host == BuildConfig.BASE_HOST) {
+                    if (!token.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+                        val newUrlBuilder = request.url.newBuilder()
+                        if (request.url.queryParameter("rc_token") == null) {
+                            newUrlBuilder.addQueryParameter("rc_token", token)
+                        }
+                        if (request.url.queryParameter("rc_uid") == null) {
+                            newUrlBuilder.addQueryParameter("rc_uid", userId)
+                        }
+                        requestBuilder.url(newUrlBuilder.build())
+                    }
+                }
+                
                 chain.proceed(requestBuilder.build())
+            }
+            .addNetworkInterceptor { chain ->
+                var request = chain.request()
+                val url = request.url
+                if (url.scheme == "http" && url.host == BuildConfig.BASE_HOST) {
+                    val newUrl = url.newBuilder().scheme("https").build()
+                    request = request.newBuilder().url(newUrl).build()
+                }
+                
+                val token = authDataStore.getCachedToken()
+                val userId = authDataStore.getCachedUserId()
+                
+                val builder = request.newBuilder()
+                if (request.header("X-Auth-Token").isNullOrEmpty() && request.url.host == BuildConfig.BASE_HOST) {
+                    if (!token.isNullOrEmpty()) {
+                        builder.header("X-Auth-Token", token)
+                    }
+                    if (!userId.isNullOrEmpty()) {
+                        builder.header("X-User-Id", userId)
+                    }
+                }
+                
+                val path = request.url.encodedPath
+                if ((path.contains("/avatar") || path.contains("/ufs")) && request.url.host == BuildConfig.BASE_HOST) {
+                    if (!token.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+                        val newUrlBuilder = request.url.newBuilder()
+                        if (request.url.queryParameter("rc_token") == null) {
+                            newUrlBuilder.addQueryParameter("rc_token", token)
+                        }
+                        if (request.url.queryParameter("rc_uid") == null) {
+                            newUrlBuilder.addQueryParameter("rc_uid", userId)
+                        }
+                        builder.url(newUrlBuilder.build())
+                    }
+                }
+                request = builder.build()
+                
+                val response = chain.proceed(request)
+                if (response.isRedirect) {
+                    val location = response.header("Location")
+                    if (location != null && location.startsWith("http://") && location.contains(BuildConfig.BASE_HOST)) {
+                        val secureLocation = location.replaceFirst("http://", "https://")
+                        response.newBuilder()
+                            .header("Location", secureLocation)
+                            .build()
+                    } else {
+                        response
+                    }
+                } else {
+                    response
+                }
             }
 
             .addInterceptor(
@@ -111,8 +187,7 @@ object NetworkModule {
         }
 
         defaultRequest {
-            url("https://study-chat.eltex-co.ru/")
-            contentType(ContentType.Application.Json)
+            url("https://${BuildConfig.BASE_HOST}/")
         }
     }
 }

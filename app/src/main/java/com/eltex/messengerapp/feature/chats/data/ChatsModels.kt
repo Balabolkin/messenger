@@ -97,6 +97,19 @@ data class SubscriptionsResponse(
 )
 
 @Serializable
+data class RoomDto(
+    val _id: String,
+    val lastMessage: MessageDto? = null
+)
+
+@Serializable
+data class RoomsResponse(
+    val update: List<RoomDto>? = null,
+    val remove: List<RoomDto>? = null,
+    val success: Boolean
+)
+
+@Serializable
 data class HistoryResponseDto(
     val messages: List<MessageDto>,
     val success: Boolean
@@ -131,7 +144,7 @@ object ChatsDateParser {
             val str = element.content
             return try {
                 Instant.parse(str).toEpochMilli()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 str.toLongOrNull()
             }
         }

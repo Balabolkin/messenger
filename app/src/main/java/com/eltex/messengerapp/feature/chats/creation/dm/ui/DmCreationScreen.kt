@@ -60,7 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun DmCreationBottomSheet(
     onDismiss: () -> Unit,
-    onOpenChat: (String, String) -> Unit,
+    onOpenChat: (String, String, String) -> Unit,
     viewModel: DmCreationViewModel = hiltViewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -77,7 +77,7 @@ fun DmCreationBottomSheet(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is DmCreationEffect.OpenChat -> {
-                    onOpenChat(effect.chatId, effect.chatName)
+                    onOpenChat(effect.chatId, effect.chatName, effect.avatarName)
                     scope.launch { sheetState.hide() }
                 }
 

@@ -1,6 +1,8 @@
 package com.eltex.messengerapp.feature.chats.data
 
 import com.eltex.messengerapp.data.database.dao.ChatDao
+import com.eltex.messengerapp.data.database.dao.MessageDao
+import com.eltex.messengerapp.BuildConfig
 import com.eltex.messengerapp.datastore.AuthDataStore
 import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
 import io.ktor.client.HttpClient
@@ -33,12 +35,16 @@ import okhttp3.WebSocketListener
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val CHATS_PAGE_SIZE = 20
+private const val RECONNECT_DELAY_MS = 3000L
+
 @Singleton
 class ChatsRepositoryImpl @Inject constructor(
     private val client: HttpClient,
     private val okHttpClient: OkHttpClient,
     private val authDataStore: AuthDataStore,
     private val chatDao: ChatDao,
+    private val messageDao: MessageDao,
 ) : ChatsRepository {
 
     private val json = Json {
@@ -60,23 +66,32 @@ class ChatsRepositoryImpl @Inject constructor(
                 updateChatsFlow()
             }
         }
+        repositoryScope.launch {
+            authDataStore.getToken().collect { token ->
+                val userId = authDataStore.getUserId().first()
+                if (webSocket != null && !token.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+                    val loginMsg = """{"msg":"method","method":"login","id":"login-id","params":[{"resume":"$token"}]}"""
+                    webSocket?.send(loginMsg)
+                }
+            }
+        }
     }
     private val roomListeners = java.util.concurrent.ConcurrentHashMap<String, (MessageDto) -> Unit>()
 
     private var allSubscriptions = emptyList<SubscriptionDto>()
-    private var currentPage = 0
+    private var currentPage = 1
     private var isPaginating = false
     private var isRefreshing = false
     private var hasMore = true
 
     private fun updateChatsFlow() {
-        _chatsFlow.value = allSubscriptions.take(currentPage * 20)
-        hasMore = allSubscriptions.size > currentPage * 20
+        _chatsFlow.value = allSubscriptions.take(currentPage * CHATS_PAGE_SIZE)
+        hasMore = allSubscriptions.size > currentPage * CHATS_PAGE_SIZE
     }
 
     private var webSocket: WebSocket? = null
     private var shouldReconnect = false
-    private val reconnectDelayMs = 3000L
+    private val reconnectDelayMs = RECONNECT_DELAY_MS
 
     private val ChatsComparator = Comparator<SubscriptionDto> { o1, o2 ->
         val t1 = ChatsDateParser.parse(o1.lastMessage?.ts) ?: ChatsDateParser.parse(o1.ls) ?: ChatsDateParser.parse(o1.ts) ?: 0L
@@ -102,7 +117,30 @@ class ChatsRepositoryImpl @Inject constructor(
             val response: HttpResponse = client.get("api/v1/subscriptions.get")
             if (response.status.value == 200) {
                 val subsResponse: SubscriptionsResponse = response.body()
-                val updatedSubs = subsResponse.update ?: emptyList()
+                val rawSubs = subsResponse.update ?: emptyList()
+
+                // Fetch rooms info to get last messages
+                var roomsMap = emptyMap<String, RoomDto>()
+                try {
+                    val roomsResponse: HttpResponse = client.get("api/v1/rooms.get")
+                    if (roomsResponse.status.value == 200) {
+                        val rResponse: RoomsResponse = roomsResponse.body()
+                        roomsMap = rResponse.update?.associateBy { it._id } ?: emptyMap()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                // Merge last message into subscriptions
+                val updatedSubs = rawSubs.map { sub ->
+                    val roomInfo = roomsMap[sub.rid]
+                    if (roomInfo?.lastMessage != null) {
+                        sub.copy(lastMessage = roomInfo.lastMessage)
+                    } else {
+                        sub
+                    }
+                }
+
                 chatDao.insertChats(updatedSubs.map { it.toEntity() })
 
                 allSubscriptions = updatedSubs.sortedWith(ChatsComparator)
@@ -148,7 +186,7 @@ class ChatsRepositoryImpl @Inject constructor(
     private fun connectWebSocket() {
         if (webSocket != null) return
         val request = Request.Builder()
-            .url("wss://study-chat.eltex-co.ru/websocket")
+            .url("wss://${BuildConfig.BASE_HOST}/websocket")
             .build()
 
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
@@ -234,6 +272,22 @@ class ChatsRepositoryImpl @Inject constructor(
                             val messageDto = json.decodeFromJsonElement<MessageDto>(args[0])
                             val roomId = messageDto.rid
                             if (roomId != null) {
+                                repositoryScope.launch {
+                                    try {
+                                        messageDao.insertMessages(listOf(messageDto.toEntity(roomId)))
+                                        chatDao.getChatByRid(roomId)?.let { chat ->
+                                            val updatedChat = chat.copy(
+                                                lastMessageText = messageDto.msg,
+                                                lastMessageTs = ChatsDateParser.parse(messageDto.ts)?.toString(),
+                                                lastMessageUserId = messageDto.u?._id,
+                                                lastMessageUsername = messageDto.u?.username
+                                            )
+                                            chatDao.insertChat(updatedChat)
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
                                 roomListeners[roomId]?.invoke(messageDto)
                             }
                         }
@@ -264,34 +318,32 @@ class ChatsRepositoryImpl @Inject constructor(
                 when (action) {
                     "inserted", "updated" -> {
                         val updatedSub = json.decodeFromJsonElement<SubscriptionDto>(data)
-                        val current = allSubscriptions.toMutableList()
-                        val index = current.indexOfFirst { it._id == updatedSub._id }
-                        if (index != -1) {
-                            val existing = current[index]
-                            val merged = existing.copy(
+                        val existing = chatDao.getChatByRid(updatedSub.rid)
+                        val merged = if (existing != null) {
+                            existing.copy(
                                 name = updatedSub.name ?: existing.name,
                                 fname = updatedSub.fname ?: existing.fname,
                                 t = updatedSub.t,
                                 unread = updatedSub.unread,
                                 alert = updatedSub.alert,
-                                ts = updatedSub.ts ?: existing.ts,
-                                ls = updatedSub.ls ?: existing.ls,
-                                lastMessage = updatedSub.lastMessage ?: existing.lastMessage
+                                ts = ChatsDateParser.parse(updatedSub.ts)?.toString() ?: existing.ts,
+                                ls = ChatsDateParser.parse(updatedSub.ls)?.toString() ?: existing.ls,
+                                lastMessageText = updatedSub.lastMessage?.msg ?: existing.lastMessageText,
+                                lastMessageTs = ChatsDateParser.parse(updatedSub.lastMessage?.ts)?.toString() ?: existing.lastMessageTs,
+                                lastMessageUserId = updatedSub.lastMessage?.u?._id ?: existing.lastMessageUserId,
+                                lastMessageUsername = updatedSub.lastMessage?.u?.username ?: existing.lastMessageUsername
                             )
-                            current[index] = merged
                         } else {
-                            current.add(updatedSub)
+                            updatedSub.toEntity()
                         }
-                        allSubscriptions = current.sortedWith(ChatsComparator)
-                        updateChatsFlow()
+                        chatDao.insertChat(merged)
                     }
                     "removed" -> {
                         val subId = if (data is JsonObject) {
                             data["_id"]?.let { (it as? JsonPrimitive)?.content }
                         } else null
                         if (subId != null) {
-                            allSubscriptions = allSubscriptions.filter { it._id != subId }
-                            updateChatsFlow()
+                            chatDao.deleteChatById(subId)
                         }
                     }
                 }
@@ -311,28 +363,27 @@ class ChatsRepositoryImpl @Inject constructor(
                     val roomFname = roomObj["fname"]?.let { (it as? JsonPrimitive)?.content }
                     val lastMsgEl = roomObj["lastMessage"]
                     
-                    val current = allSubscriptions.toMutableList()
-                    var changed = false
-                    for (i in current.indices) {
-                        if (current[i].rid == roomId) {
-                            var sub = current[i]
-                            if (roomName != null) sub = sub.copy(name = roomName)
-                            if (roomFname != null) sub = sub.copy(fname = roomFname)
-                            if (lastMsgEl != null) {
-                                val lastMsg = try {
-                                    json.decodeFromJsonElement<MessageDto>(lastMsgEl)
-                                } catch (e: Exception) {
-                                    null
-                                }
-                                if (lastMsg != null) sub = sub.copy(lastMessage = lastMsg)
+                    val existing = chatDao.getChatByRid(roomId)
+                    if (existing != null) {
+                        var updated = existing
+                        if (roomName != null) updated = updated.copy(name = roomName)
+                        if (roomFname != null) updated = updated.copy(fname = roomFname)
+                        if (lastMsgEl != null) {
+                            val lastMsg = try {
+                                json.decodeFromJsonElement<MessageDto>(lastMsgEl)
+                            } catch (e: Exception) {
+                                null
                             }
-                            current[i] = sub
-                            changed = true
+                            if (lastMsg != null) {
+                                updated = updated.copy(
+                                    lastMessageText = lastMsg.msg,
+                                    lastMessageTs = ChatsDateParser.parse(lastMsg.ts)?.toString(),
+                                    lastMessageUserId = lastMsg.u?._id,
+                                    lastMessageUsername = lastMsg.u?.username
+                                )
+                            }
                         }
-                    }
-                    if (changed) {
-                        allSubscriptions = current.sortedWith(ChatsComparator)
-                        updateChatsFlow()
+                        chatDao.insertChat(updated)
                     }
                 }
             } catch (e: Exception) {
@@ -353,72 +404,7 @@ class ChatsRepositoryImpl @Inject constructor(
         webSocket?.send(unsubMsg)
     }
 
-    override suspend fun createRoom(name: String, type: String) {
-        val endpoint = when (type) {
-            "c" -> "api/v1/channels.create"
-            "p" -> "api/v1/groups.create"
-            "d" -> "api/v1/im.create"
-            else -> "api/v1/channels.create"
-        }
-        val response: HttpResponse = if (type == "d") {
-            client.post(endpoint) {
-                setBody(CreateImRequest(username = name))
-            }
-        } else {
-            client.post(endpoint) {
-                setBody(CreateRoomRequest(name = name))
-            }
-        }
-        if (response.status.value == 200 || response.status.value == 201) {
-            refresh()
-        } else {
-            val errorBody = response.body<String>()
-            throw Exception("Failed to create chat: $errorBody")
-        }
-    }
-
-    override suspend fun searchUsers(query: String): List<com.eltex.messengerapp.feature.chats.domain.UserDto> {
-        val q = if (query.isBlank()) "{}" else """{"${"$"}or":[{"username":{"${"$"}regex":"$query","${"$"}options":"i"}},{"name":{"${"$"}regex":"$query","${"$"}options":"i"}}]}"""
-        val response: HttpResponse = client.get("api/v1/users.list") {
-            parameter("query", q)
-            parameter("count", 50)
-        }
-        if (response.status.value == 200) {
-            val res: UsersListResponse = response.body()
-            return res.users ?: emptyList()
-        }
-        return emptyList()
-    }
-
-    override suspend fun createDirectMessage(username: String) {
-        val response: HttpResponse = client.post("api/v1/im.create") {
-            setBody(CreateImRequest(username = username))
-        }
-        if (response.status.value == 200 || response.status.value == 201) {
-            refresh()
-        } else {
-            val errorBody = response.body<String>()
-            throw Exception("Failed to create direct message: $errorBody")
-        }
-    }
-
     suspend fun clearAllData() {
         chatDao.clearChats()
     }
 }
-
-@Serializable
-data class CreateRoomRequest(
-    val name: String
-)
-
-@Serializable
-data class CreateImRequest(
-    val username: String
-)
-
-@Serializable
-data class UsersListResponse(
-    val users: List<com.eltex.messengerapp.feature.chats.domain.UserDto>? = null,
-    val success: Boolean
-)

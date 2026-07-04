@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -71,7 +72,7 @@ fun ProfileScreen(
 
             state.error != null && state.user == null -> {
                 Text(
-                    text = "Ошибка: ${state.error}",
+                    text = stringResource(R.string.error_prefix, state.error.orEmpty()),
                     modifier = Modifier.align(Alignment.Center),
                     color = Color.Red
                 )
@@ -173,7 +174,7 @@ fun ProfileContent(
                     Row {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
-                            contentDescription = "Выйти",
+                            contentDescription = stringResource(R.string.logout_button_description),
                             tint = BrandPrimary,
                             modifier = Modifier
                                 .size(24.dp)
@@ -182,7 +183,7 @@ fun ProfileContent(
                                 )
                         )
                         Text(
-                            text = "Выйти",
+                            text = stringResource(R.string.logout_text),
                             fontSize = 17.sp,
                             lineHeight = 24.sp,
                             color = Color.Black,
@@ -194,7 +195,7 @@ fun ProfileContent(
                     }
                     Icon(
                         painter = painterResource(R.drawable.arrow_forward),
-                        contentDescription = "Arrow from IOS",
+                        contentDescription = stringResource(R.string.arrow_ios_description),
                         tint = Color(0xFFCBCBCC),
                     )
                 }

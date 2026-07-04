@@ -1,6 +1,7 @@
 package com.eltex.messengerapp.feature.chat.data
 
-import android.util.Log.e
+import com.eltex.messengerapp.BuildConfig
+import com.eltex.messengerapp.data.database.dao.ChatDao
 import com.eltex.messengerapp.data.database.dao.MessageDao
 import com.eltex.messengerapp.feature.chat.domain.ChatRepository
 import com.eltex.messengerapp.feature.chats.data.HistoryResponseDto
@@ -12,10 +13,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
 import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,11 +23,26 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.net.Uri
 import android.content.Context
 import kotlinx.serialization.Serializable
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class PostMessageRequest(
@@ -38,10 +50,15 @@ data class PostMessageRequest(
     val text: String
 )
 
+private const val HISTORY_LOAD_COUNT = 100
+private const val MAX_FILE_SIZE_BYTES = 5242880 // 5 MB
+
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val client: HttpClient,
+    private val okHttpClient: OkHttpClient,
     private val messageDao: MessageDao,
+    private val chatDao: ChatDao,
     private val chatsRepository: ChatsRepository
 ) : ChatRepository {
 
@@ -70,6 +87,13 @@ class ChatRepositoryImpl @Inject constructor(
                     }
                     current + (roomId to updated)
                 }
+                repositoryScope.launch {
+                    try {
+                        markAsRead(roomId)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
 
             _messagesState.collect { map ->
@@ -91,7 +115,7 @@ class ChatRepositoryImpl @Inject constructor(
         try {
             val response: HttpResponse = client.get(endpoint) {
                 parameter("roomId", roomId)
-                parameter("count", 100)
+                parameter("count", HISTORY_LOAD_COUNT)
             }
 
             if (response.status.value == 200) {
@@ -118,6 +142,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun sendMessage(roomId: String, text: String) {
         val response: HttpResponse = client.post("api/v1/chat.postMessage") {
+            contentType(ContentType.Application.Json)
             setBody(PostMessageRequest(roomId, text))
         }
         if (response.status.value != 200) {
@@ -144,31 +169,124 @@ class ChatRepositoryImpl @Inject constructor(
             }
             cursor.close()
         }
-
-        val mimeType = contentResolver.getType(fileUri) ?: "application/octet-stream"
-        val bytes = contentResolver.openInputStream(fileUri)?.use { it.readBytes() }
+        val originalMimeType = contentResolver.getType(fileUri) ?: "application/octet-stream"
+        val originalBytes = contentResolver.openInputStream(fileUri)?.use { it.readBytes() }
             ?: throw Exception("Cannot read file content")
 
-        val response: HttpResponse = client.post("api/v1/rooms.upload/$roomId") {
-            setBody(MultiPartFormDataContent(
-                formData {
-                    append("file", bytes, Headers.build {
-                        append(HttpHeaders.ContentType, mimeType)
-                        append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                    })
-                    if (msg != null) {
-                        append("msg", msg)
-                    }
-                    if (description != null) {
-                        append("description", description)
-                    }
+        val (bytes, mimeType) = compressImageIfNeeded(originalBytes, originalMimeType, context)
+
+        val multipartBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "file",
+                fileName,
+                bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            )
+            .apply {
+                if (!msg.isNullOrEmpty()) addFormDataPart("msg", msg)
+                if (!description.isNullOrEmpty()) addFormDataPart("description", description)
+            }
+            .build()
+
+        val request = Request.Builder()
+            .url("https://${BuildConfig.BASE_HOST}/api/v1/rooms.media/$roomId")
+            .post(multipartBody)
+            .build()
+
+        val responseBody = withContext(Dispatchers.IO) {
+            val response = okHttpClient.newCall(request).execute()
+            response.use {
+                val bodyStr = it.body.string()
+                if (!it.isSuccessful) {
+                    throw Exception("Failed to upload file: ${it.code} $bodyStr")
                 }
-            ))
+                bodyStr
+            }
         }
 
-        if (response.status.value != 200) {
-            throw Exception("Failed to upload file: ${response.status}")
+        val jsonResponse = Json.parseToJsonElement(responseBody).jsonObject
+        val fileObj = jsonResponse["file"]?.jsonObject ?: throw Exception("Invalid upload response: $responseBody")
+        val fileUrl = fileObj["url"]?.jsonPrimitive?.content ?: throw Exception("Missing file URL in response: $responseBody")
+
+        val attachment = buildJsonObject {
+            put("title", fileName)
+            put("title_link", fileUrl)
+            put("title_link_download", JsonPrimitive(true))
+            if (mimeType.startsWith("image/")) {
+                put("image_url", fileUrl)
+            } else if (mimeType.startsWith("video/")) {
+                put("video_url", fileUrl)
+            } else if (mimeType.startsWith("audio/")) {
+                put("audio_url", fileUrl)
+            }
+            put("type", "file")
+            if (!description.isNullOrEmpty()) {
+                put("description", description)
+            }
         }
+
+        val requestBody = buildJsonObject {
+            put("roomId", roomId)
+            put("text", msg ?: "")
+            putJsonArray("attachments") {
+                add(attachment)
+            }
+        }
+
+        val postResponse: HttpResponse = client.post("api/v1/chat.postMessage") {
+            contentType(ContentType.Application.Json)
+            setBody(requestBody.toString())
+        }
+
+        if (postResponse.status.value != 200) {
+            val errorBody = postResponse.body<String>()
+            throw Exception("Failed to post attachment message: ${postResponse.status} $errorBody")
+        }
+    }
+
+    private fun compressImageIfNeeded(bytes: ByteArray, mimeType: String, context: Context): Pair<ByteArray, String> {
+        if (!mimeType.startsWith("image/") || mimeType.contains("svg")) {
+            return Pair(bytes, mimeType)
+        }
+        if (bytes.size <= MAX_FILE_SIZE_BYTES) {
+            return Pair(bytes, mimeType)
+        }
+        try {
+            val options = android.graphics.BitmapFactory.Options()
+            var bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                ?: return Pair(bytes, mimeType)
+
+            var quality = 70
+            var scale = 0.8
+            var currentBytes = bytes
+            
+            while (currentBytes.size > MAX_FILE_SIZE_BYTES && (bitmap.width > 16 || bitmap.height > 16)) {
+                val width = (bitmap.width * scale).toInt()
+                val height = (bitmap.height * scale).toInt()
+                if (width <= 0 || height <= 0) break
+                val scaledBitmap = android.graphics.Bitmap.createScaledBitmap(bitmap, width, height, true)
+                if (scaledBitmap != bitmap) {
+                    bitmap.recycle()
+                    bitmap = scaledBitmap
+                }
+                val stream = java.io.ByteArrayOutputStream()
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, stream)
+                currentBytes = stream.toByteArray()
+                
+                if (quality > 15) {
+                    quality -= 15
+                } else {
+                    scale = 0.5
+                }
+            }
+            bitmap.recycle()
+            if (currentBytes.size <= MAX_FILE_SIZE_BYTES) {
+                return Pair(currentBytes, "image/jpeg")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return Pair(bytes, mimeType)
     }
 
     suspend fun clearMessagesForRoom(roomId: String) {
@@ -177,4 +295,47 @@ class ChatRepositoryImpl @Inject constructor(
             current - roomId
         }
     }
+
+    override suspend fun markAsRead(roomId: String) {
+        try {
+            // Update local Room database immediately for instant UI update
+            chatDao.markChatAsRead(roomId)
+
+            // Notify backend that we read this room
+            val response: HttpResponse = client.post("api/v1/subscriptions.read") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("rid" to roomId))
+            }
+            if (response.status.value != 200) {
+                android.util.Log.e("ChatRepositoryImpl", "Failed to mark as read on backend: ${response.status}")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun getMembersCount(roomId: String): Int {
+        val response: HttpResponse = client.get("api/v1/rooms.info") {
+            parameter("roomId", roomId)
+        }
+        if (response.status.value == 200) {
+            val roomsInfo: RoomInfoResponse = response.body()
+            if (roomsInfo.success) {
+                return roomsInfo.room.usersCount ?: 0
+            }
+        }
+        throw Exception("Failed to load room info: ${response.status}")
+    }
 }
+
+@Serializable
+data class RoomInfoResponse(
+    val room: RoomInfoDetail,
+    val success: Boolean
+)
+
+@Serializable
+data class RoomInfoDetail(
+    val _id: String,
+    val usersCount: Int? = null
+)

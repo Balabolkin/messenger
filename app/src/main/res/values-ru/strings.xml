@@ -39,4 +39,40 @@
     <string name="create_chat_retry">Повторить</string>
     <string name="create_chat_ok">Ок</string>
     <string name="create_chat_clear">Очистить</string>
+
+    <!-- Chats Screen -->
+    <string name="create_chat_description">Создать чат</string>
+    <string name="search_chats_hint">Поиск по чатам</string>
+    <string name="clear_description">Очистить</string>
+    <string name="error_banner_description">Ошибка</string>
+    <string name="chats_empty_message">Чатов пока нет</string>
+    <string name="no_messages">Сообщений нет</string>
+    <string name="attachment_type_image">Изображение</string>
+    <string name="attachment_type_video">Видео</string>
+    <string name="attachment_type_document">Документ</string>
+    <string name="prefix_me">Вы: </string>
+    <string name="status_read">Просмотрено</string>
+    <string name="status_delivered">Доставлено</string>
+    <string name="search_chat_not_found_prefix">Чат с названием </string>
+    <string name="search_chat_not_found_suffix"> не найден</string>
+    <string name="favorites_chat_name">Избранное</string>
+    <string name="default_user_name">Пользователь</string>
+
+    <!-- Chat Screen -->
+    <string name="members_count">Участники: %1$d</string>
+    <string name="back_button_description">Назад</string>
+    <string name="menu_button_description">Меню</string>
+    <string name="message_input_placeholder">Текст сообщения</string>
+    <string name="attach_button_description">Прикрепить</string>
+    <string name="send_button_description">Отправить</string>
+    <string name="error_open_link">Не удалось открыть ссылку</string>
+    <string name="play_video_description">Проиграть</string>
+
+    <!-- Profile Screen -->
+    <string name="error_prefix">Ошибка: %1$s</string>
+    <string name="logout_button_description">Выйти</string>
+    <string name="logout_text">Выйти</string>
+    <string name="arrow_ios_description">Arrow from iOS</string>
+    <string name="fullscreen_image_description">Изображение во весь экран</string>
+    <string name="close_description">Закрыть</string>
 </resources>

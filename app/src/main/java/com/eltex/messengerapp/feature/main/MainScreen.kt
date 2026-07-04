@@ -108,7 +108,8 @@ fun MainScreen(
                                 NavDestinations.Chat(
                                     roomId = chat.rid,
                                     roomName = chat.fname ?: chat.name ?: "Чат",
-                                    roomType = chat.t
+                                    roomType = chat.t,
+                                    avatarName = chat.name
                                 )
                             )
                         },

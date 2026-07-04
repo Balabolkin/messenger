@@ -58,11 +58,9 @@ class ChatsViewModel @Inject constructor(
                 state = state.copy(error = e.message)
             }
         }
-        repository.startRealtimeUpdates()
     }
 
     fun onForeground() {
-        repository.startRealtimeUpdates()
         viewModelScope.launch {
             try {
                 repository.refresh()
@@ -73,7 +71,6 @@ class ChatsViewModel @Inject constructor(
     }
 
     fun onBackground() {
-        repository.stopRealtimeUpdates()
     }
 
     fun loadNextPage() {
@@ -131,68 +128,9 @@ class ChatsViewModel @Inject constructor(
         state = state.copy(error = null)
     }
 
-    fun createRoom(name: String, type: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            state = state.copy(isLoading = true)
-            try {
-                repository.createRoom(name, type)
-                onSuccess()
-            } catch (e: Exception) {
-                state = state.copy(error = e.message)
-            } finally {
-                state = state.copy(isLoading = false)
-            }
-        }
-    }
 
-    var usersList by mutableStateOf<List<com.eltex.messengerapp.feature.chats.domain.UserDto>>(emptyList())
-        private set
-
-    var userSearchQuery by mutableStateOf("")
-        private set
-
-    private var usersSearchJob: Job? = null
-
-    fun loadInitialUsers() {
-        userSearchQuery = ""
-        viewModelScope.launch {
-            try {
-                usersList = repository.searchUsers("")
-            } catch (e: Exception) {
-                state = state.copy(error = e.message)
-            }
-        }
-    }
-
-    fun onUserSearchQueryChanged(query: String) {
-        userSearchQuery = query
-        usersSearchJob?.cancel()
-        usersSearchJob = viewModelScope.launch {
-            delay(300)
-            try {
-                usersList = repository.searchUsers(query)
-            } catch (e: Exception) {
-                state = state.copy(error = e.message)
-            }
-        }
-    }
-
-    fun createDirectMessage(username: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            state = state.copy(isLoading = true)
-            try {
-                repository.createDirectMessage(username)
-                onSuccess()
-            } catch (e: Exception) {
-                state = state.copy(error = e.message)
-            } finally {
-                state = state.copy(isLoading = false)
-            }
-        }
-    }
 
     override fun onCleared() {
         super.onCleared()
-        repository.stopRealtimeUpdates()
     }
 }

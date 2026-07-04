@@ -62,6 +62,7 @@ import com.eltex.messengerapp.feature.chats.data.SubscriptionDto
 import com.eltex.messengerapp.ui.theme.AppColors
 import com.eltex.messengerapp.ui.theme.BrandDark
 import com.eltex.messengerapp.ui.theme.BrandPrimary
+import com.eltex.messengerapp.util.toSecureUrl
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDateTime
@@ -381,11 +382,13 @@ fun ChatRowItem(
     val displayName = chat.fname ?: chat.name ?: "Чат"
 
     // Avatar url logic
-    val avatarUrl = if (chat.t == "d") {
-        "https://study-chat.eltex-co.ru/avatar/${chat.name}"
-    } else {
-        "https://study-chat.eltex-co.ru/avatar/room/${chat.rid}"
-    }
+    val avatarUrl = toSecureUrl(
+        if (chat.t == "d") {
+            "/avatar/${chat.name}"
+        } else {
+            "/avatar/room/${chat.rid}"
+        }
+    )
 
     Column(
         modifier = Modifier

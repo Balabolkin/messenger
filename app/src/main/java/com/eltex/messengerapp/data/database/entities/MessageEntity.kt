@@ -28,7 +28,7 @@ data class MessageEntity(
             _id = _id,
             rid = rid,
             msg = msg,
-            ts = ts as? JsonElement,
+            ts = ts?.let { kotlinx.serialization.json.JsonPrimitive(it) },
             u = if (userId != null) UserDto(_id = userId, username = username) else null,
             attachments = if (fileUrl != null) {
                 listOf(

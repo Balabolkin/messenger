@@ -33,6 +33,7 @@ android {
 
         buildConfigField("String", "API_KEY", "\"$apiKey\"")
         buildConfigField("String", "Authorization", "\"$authorization\"")
+        buildConfigField("String", "BASE_HOST", "\"study-chat.eltex-co.ru\"")
     }
 
     buildFeatures {
@@ -89,6 +90,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
 
     ksp(libs.hilt.compiler)
 

@@ -109,7 +109,7 @@ class DmCreationViewModel @Inject constructor(
 
             when (val result = dmCreationRepository.createDm(username)) {
                 is Result.Success -> {
-                    _effect.emit(DmCreationEffect.OpenChat(result.data.rid, user.getFullName()))
+                    _effect.emit(DmCreationEffect.OpenChat(result.data.rid, user.getFullName(), user.username))
                 }
 
                 is Result.Error -> {

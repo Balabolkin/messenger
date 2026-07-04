@@ -14,5 +14,6 @@ data class ChatState(
     val activeTab: Int = 0, // 0 for Photos, 1 for Videos, 2 for Documents
     val selectedMedia: List<Uri> = emptyList(),
     val localMediaList: List<Uri> = emptyList(),
-    val hasMediaPermission: Boolean = false
+    val hasMediaPermission: Boolean = false,
+    val membersCount: Int? = null
 )

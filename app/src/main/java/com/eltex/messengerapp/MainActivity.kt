@@ -12,9 +12,24 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.eltex.messengerapp.feature.splash.SplashViewModel
 import com.eltex.messengerapp.ui.theme.MessengerAppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import com.eltex.messengerapp.feature.chats.domain.ChatsRepository
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var chatsRepository: ChatsRepository
+
+    override fun onStart() {
+        super.onStart()
+        chatsRepository.startRealtimeUpdates()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        chatsRepository.stopRealtimeUpdates()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()

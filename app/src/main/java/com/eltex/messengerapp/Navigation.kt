@@ -82,6 +82,7 @@ fun Navigation(
                 roomId = chatDest.roomId,
                 roomName = chatDest.roomName,
                 roomType = chatDest.roomType,
+                avatarName = chatDest.avatarName,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -89,12 +90,13 @@ fun Navigation(
         composable<NavDestinations.CreateChat> {
             DmCreationBottomSheet(
                 onDismiss = { navController.navigateUp() },
-                onOpenChat = { chatId, chatName ->
+                onOpenChat = { chatId, chatName, avatarName ->
                     navController.navigate(
                         NavDestinations.Chat(
-                            chatId,
-                            chatName,
-                            "d"
+                            roomId = chatId,
+                            roomName = chatName,
+                            roomType = "d",
+                            avatarName = avatarName
                         )
                     ) {
                         popUpTo(NavDestinations.CreateChat) { inclusive = true }
@@ -123,7 +125,8 @@ sealed interface NavDestinations {
     data class Chat(
         val roomId: String,
         val roomName: String,
-        val roomType: String
+        val roomType: String,
+        val avatarName: String? = null
     ) : NavDestinations
 
     @Serializable
