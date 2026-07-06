@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -107,6 +110,7 @@ fun AuthScreen(
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
     val isButtonEnabled = state.login.isNotBlank() && state.password.isNotBlank()
     val shape = RoundedCornerShape(10.dp)
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = modifier.fillMaxSize()
@@ -119,220 +123,199 @@ fun AuthScreen(
             contentScale = ContentScale.Crop
         )
 
-        // 3. Контент
+        // 3. Контент с поддержкой клавиатуры
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .imePadding()
         ) {
-            // Логотип
-            Image(
-                painter = painterResource(id = R.drawable.ic_logo),
-                contentDescription = stringResource(R.string.app_name),
+            Column(
                 modifier = Modifier
-                    .size(80.dp)
-                    .padding(bottom = 32.dp),
-                contentScale = ContentScale.Fit
-            )
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(32.dp))
 
-            // Заголовок
-            Text(
-                text = stringResource(R.string.auth_title),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 17.sp,
-                    lineHeight = 22.sp,
-                    letterSpacing = 0.sp,
-                    textAlign = TextAlign.Center
-                ),
-                color = AppColors.TextWhite,
+                // Логотип
+                Image(
+                    painter = painterResource(id = R.drawable.ic_logo),
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier
+                        .size(80.dp)
+                        .padding(bottom = 32.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                // Заголовок
+                Text(
+                    text = stringResource(R.string.auth_title),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 17.sp,
+                        lineHeight = 22.sp,
+                        letterSpacing = 0.sp,
+                        textAlign = TextAlign.Center
+                    ),
+                    color = AppColors.TextWhite,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp)
+                )
+
+                // Поле "Логин"
+                TextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = state.login,
+                    onValueChange = {
+                        onEvent(AuthMessage.LoginChanged(it))
+                    },
+                    isError = state.loginError != null,
+                    singleLine = true,
+                    label = {
+                        Text(text = stringResource(R.string.login_hint))
+                    },
+                    shape = shape,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = AppColors.InputBackground,
+                        unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
+                        disabledContainerColor = AppColors.InputBackgroundUnfocused,
+                        errorContainerColor = AppColors.ErrorContainer,
+                        focusedTextColor = AppColors.InputText,
+                        unfocusedTextColor = AppColors.InputText,
+                        disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
+                        errorTextColor = AppColors.Error,
+                        focusedLabelColor = AppColors.InputLabel,
+                        unfocusedLabelColor = AppColors.InputLabel,
+                        disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                        errorLabelColor = AppColors.Error,
+                        focusedSupportingTextColor = AppColors.InputLabel,
+                        unfocusedSupportingTextColor = AppColors.InputLabel,
+                        disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                        errorSupportingTextColor = AppColors.Error,
+                        cursorColor = AppColors.InputLabel,
+                        errorCursorColor = AppColors.Error,
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Поле "Пароль"
+                TextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = state.password,
+                    onValueChange = {
+                        onEvent(AuthMessage.PasswordChanged(it))
+                    },
+                    isError = state.passwordError != null,
+                    singleLine = true,
+                    visualTransformation = if (isPasswordVisible) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    label = {
+                        Text(text = stringResource(R.string.password_hint))
+                    },
+                    supportingText = {
+                        Text(state.passwordError.toReadableString().orEmpty())
+                    },
+                    shape = shape,
+                    trailingIcon = {
+                        val icon = if (isPasswordVisible) {
+                            Icons.Filled.VisibilityOff
+                        } else {
+                            Icons.Filled.Visibility
+                        }
+
+                        val description = if (isPasswordVisible) {
+                            stringResource(R.string.hide_password_description)
+                        } else {
+                            stringResource(R.string.show_password_description)
+                        }
+
+                        IconButton(
+                            onClick = { isPasswordVisible = !isPasswordVisible }
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = description,
+                                tint = AppColors.TextWhite
+                            )
+                        }
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = AppColors.InputBackground,
+                        unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
+                        disabledContainerColor = AppColors.InputBackgroundUnfocused,
+                        errorContainerColor = AppColors.ErrorContainer,
+                        focusedTextColor = AppColors.InputText,
+                        unfocusedTextColor = AppColors.InputText,
+                        disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
+                        errorTextColor = AppColors.Error,
+                        focusedLabelColor = AppColors.InputLabel,
+                        unfocusedLabelColor = AppColors.InputLabel,
+                        disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                        errorLabelColor = AppColors.Error,
+                        focusedSupportingTextColor = AppColors.InputLabel,
+                        unfocusedSupportingTextColor = AppColors.InputLabel,
+                        disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
+                        errorSupportingTextColor = AppColors.Error,
+                        cursorColor = AppColors.InputLabel,
+                        errorCursorColor = AppColors.Error,
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+
+            // Кнопка "Войти"
+            Button(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp)
-            )
-
-            // Поле "Логин"
-            TextField(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                    //.height(36.dp),
-                value = state.login,
-                onValueChange = {
-                    onEvent(AuthMessage.LoginChanged(it))
+                    .height(80.dp)
+                    .padding(horizontal = 32.dp)
+                    .padding(bottom = 32.dp),
+                onClick = {
+                    onEvent(AuthMessage.Submit)
                 },
-                isError = state.loginError != null,
-                singleLine = true,
-                label = {
-                    Text(
-                        text = stringResource(R.string.login_hint),
-//                        color = AppColors.InputLabel
-                    )
-                },
-//                supportingText = {
-//                    Text(state.loginError.toReadableString().orEmpty())
-//                },
+                enabled = isButtonEnabled,
                 shape = shape,
-                colors = TextFieldDefaults.colors(
-                    // Цвета контейнера
-                    focusedContainerColor = AppColors.InputBackground,
-                    unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
-                    disabledContainerColor = AppColors.InputBackgroundUnfocused,
-                    errorContainerColor = AppColors.ErrorContainer,
-
-                    // Цвета текста
-                    focusedTextColor = AppColors.InputText,
-                    unfocusedTextColor = AppColors.InputText,
-                    disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
-                    errorTextColor = AppColors.Error,
-
-                    // Цвета label (плейсхолдер)
-                    focusedLabelColor = AppColors.InputLabel,
-                    unfocusedLabelColor = AppColors.InputLabel,
-                    disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
-                    errorLabelColor = AppColors.Error,
-
-                    // Цвета supporting text (текст ошибки)
-                    focusedSupportingTextColor = AppColors.InputLabel,
-                    unfocusedSupportingTextColor = AppColors.InputLabel,
-                    disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
-                    errorSupportingTextColor = AppColors.Error,
-
-                    // Цвета курсора
-                    cursorColor = AppColors.InputLabel,
-                    errorCursorColor = AppColors.Error,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.ButtonEnabled,
+                    contentColor = AppColors.ButtonTextEnabled,
+                    disabledContainerColor = AppColors.ButtonDisabled,
+                    disabledContentColor = AppColors.ButtonTextDisabled
                 )
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Поле "Пароль"
-            TextField(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                    //.height(36.dp),
-                value = state.password,
-                onValueChange = {
-                    onEvent(AuthMessage.PasswordChanged(it))
-                },
-                isError = state.passwordError != null,
-                singleLine = true,
-                visualTransformation = if (isPasswordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-                label = {
-                    Text(
-                        text = stringResource(R.string.password_hint),
-//                        color = AppColors.InputLabel
-                    )
-                },
-                supportingText = {
-                    Text(state.passwordError.toReadableString().orEmpty())
-                },
-                shape = shape,
-                trailingIcon = {
-                    val icon = if (isPasswordVisible) {
-                        Icons.Filled.VisibilityOff
+            ) {
+                Text(
+                    text = stringResource(R.string.login),
+                    color = if (isButtonEnabled) {
+                        AppColors.ButtonTextEnabled
                     } else {
-                        Icons.Filled.Visibility
+                        AppColors.ButtonTextDisabled
                     }
-
-                    val description = if (isPasswordVisible) {
-                        stringResource(R.string.hide_password_description)
-                    } else {
-                        stringResource(R.string.show_password_description)
-                    }
-
-                    IconButton(
-                        onClick = { isPasswordVisible = !isPasswordVisible }
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = description,
-                            tint = AppColors.TextWhite
-                        )
-                    }
-                },
-                colors = TextFieldDefaults.colors(
-                    // Цвета контейнера
-                    focusedContainerColor = AppColors.InputBackground,
-                    unfocusedContainerColor = AppColors.InputBackgroundUnfocused,
-                    disabledContainerColor = AppColors.InputBackgroundUnfocused,
-                    errorContainerColor = AppColors.ErrorContainer,
-
-                    // Цвета текста
-                    focusedTextColor = AppColors.InputText,
-                    unfocusedTextColor = AppColors.InputText,
-                    disabledTextColor = AppColors.InputText.copy(alpha = 0.5f),
-                    errorTextColor = AppColors.Error,
-
-                    // Цвета label (плейсхолдер)
-                    focusedLabelColor = AppColors.InputLabel,
-                    unfocusedLabelColor = AppColors.InputLabel,
-                    disabledLabelColor = AppColors.InputLabel.copy(alpha = 0.5f),
-                    errorLabelColor = AppColors.Error,
-
-                    // Цвета supporting text (текст ошибки)
-                    focusedSupportingTextColor = AppColors.InputLabel,
-                    unfocusedSupportingTextColor = AppColors.InputLabel,
-                    disabledSupportingTextColor = AppColors.InputLabel.copy(alpha = 0.5f),
-                    errorSupportingTextColor = AppColors.Error,
-
-                    // Цвета курсора
-                    cursorColor = AppColors.InputLabel,
-                    errorCursorColor = AppColors.Error,
                 )
-            )
+            }
+        }
 
-
-    }
-        // Кнопка "Войти"
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(horizontal = 32.dp)
-                .padding(bottom = 32.dp)
-                .align(Alignment.BottomCenter),
-            onClick = {
-                onEvent(AuthMessage.Submit)
-            },
-            enabled = isButtonEnabled,
-            shape = shape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = AppColors.ButtonEnabled,
-                contentColor = AppColors.ButtonTextEnabled,
-                disabledContainerColor = AppColors.ButtonDisabled,
-                disabledContentColor = AppColors.ButtonTextDisabled
-            )
-        ) {
-            Text(
-                text = stringResource(R.string.login),
-                color = if (isButtonEnabled) {
-                    AppColors.ButtonTextEnabled
-                } else {
-                    AppColors.ButtonTextDisabled
+        // AlertDialog для ошибок
+        if (showErrorDialog) {
+            AlertDialog(
+                onDismissRequest = onDismissError,
+                title = { Text(text = "Ошибка") },
+                text = { Text(text = errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = onDismissError) {
+                        Text("Ок")
+                    }
                 }
             )
         }
-
-    // AlertDialog для ошибок
-    if (showErrorDialog) {
-        AlertDialog(
-            onDismissRequest = onDismissError,
-            title = { Text(text = "Ошибка") },
-            text = { Text(text = errorMessage) },
-            confirmButton = {
-                TextButton(onClick = onDismissError) {
-                    Text("Ок")
-                }
-            }
-        )
     }
-}
 }
 
 @Composable
