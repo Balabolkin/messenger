@@ -62,6 +62,7 @@ enum class Tab(
 fun MainScreen(
     navController: NavController = rememberNavController()
 ) {
+    val chatsViewModel: ChatsViewModel = hiltViewModel()
     var selectedTab by rememberSaveable { mutableStateOf(Tab.Chats) }
 
     Scaffold(

@@ -1,7 +1,5 @@
-package com.eltex.messengerapp.feature.chat.di
+package com.eltex.messengerapp.di
 
-import com.eltex.messengerapp.feature.chat.data.ChatRepositoryImpl
-import com.eltex.messengerapp.feature.chat.domain.ChatRepository
 import com.eltex.messengerapp.feature.group.data.GroupRepositoryImpl
 import com.eltex.messengerapp.feature.group.domain.GroupRepository
 import dagger.Binds
@@ -10,10 +8,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-@InstallIn(SingletonComponent::class)
 @Module
-interface ChatModule {
+@InstallIn(SingletonComponent::class)
+interface GroupModule {
     @Binds
     @Singleton
-    fun bindChatRepository(impl: ChatRepositoryImpl): ChatRepository
+    fun bindGroupRepository(impl: GroupRepositoryImpl): GroupRepository
 }

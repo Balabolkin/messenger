@@ -14,6 +14,7 @@ import com.eltex.messengerapp.feature.main.MainScreen
 import com.eltex.messengerapp.feature.profile.ui.ProfileScreen
 import com.eltex.messengerapp.feature.chat.ui.ChatScreen
 import com.eltex.messengerapp.feature.chats.creation.dm.ui.DmCreationBottomSheet
+import com.eltex.messengerapp.feature.group.ui.GroupMembersScreenRoute
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -38,7 +39,6 @@ fun Navigation(
         }
 
         composable<NavDestinations.Auth> {
-
             AuthScreenRoute(
                 onLoginSuccess = {
                     navController.navigate(NavDestinations.Main) {
@@ -46,7 +46,6 @@ fun Navigation(
                     }
                 }
             )
-
         }
 
         composable<NavDestinations.Chats> {
@@ -83,6 +82,15 @@ fun Navigation(
                 roomName = chatDest.roomName,
                 roomType = chatDest.roomType,
                 avatarName = chatDest.avatarName,
+                onBack = { navController.popBackStack() },
+                onNavigateToGroupMembers = { roomId, roomName, roomType ->
+                    navController.navigate(NavDestinations.GroupMembers(roomId, roomName, roomType))
+                }
+            )
+        }
+
+        composable<NavDestinations.GroupMembers> { backStackEntry ->
+            GroupMembersScreenRoute(
                 onBack = { navController.popBackStack() }
             )
         }
@@ -131,5 +139,10 @@ sealed interface NavDestinations {
 
     @Serializable
     object CreateChat
+    @Serializable
+    data class GroupMembers(
+        val roomId: String,
+        val roomName: String,
+        val roomType: String
+    ) : NavDestinations
 }
-

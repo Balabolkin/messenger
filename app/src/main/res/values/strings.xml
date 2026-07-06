@@ -3,6 +3,9 @@
     <string name="chats">Chats</string>
     <string name="profile">Profile</string>
 
+    <!-- Navigation -->
+    <string name="navigate_back">Back</string>
+
     <!-- Auth Screen -->
     <string name="login_hint">Login</string>
     <string name="password_hint">Password</string>
@@ -13,13 +16,41 @@
     <string name="password_too_short_error">Password must be at least 6 characters</string>
     <string name="show_password_description">Show password</string>
     <string name="hide_password_description">Hide password</string>
-    <string name="auth_title">Enter your login and password to log in preferences</string>
+    <string name="auth_title">Enter your login and password to log in</string>
+
+    <!-- Chats Screen -->
+    <string name="chats_title">Chats</string>
+    <string name="search_hint">Search chats</string>
+    <string name="no_chats">No chats yet</string>
+    <string name="chat_not_found_prefix">Chat with name</string>
+    <string name="chat_not_found_suffix">not found</string>
+
+    <!-- Chat Screen -->
+    <string name="messages_empty">No messages</string>
+    <string name="message_hint">Type a message</string>
+
+    <!-- Group Members -->
+    <string name="group_members_count">%d members</string>
+    <string name="default_group_name">Group</string>
+    <string name="role_admin">Admin</string>
+    <string name="role_owner">Owner</string>
+
+    <!-- Status -->
+    <string name="status_read">Read</string>
+    <string name="status_delivered">Delivered</string>
 
     <!-- Errors -->
     <string name="network_error">Network error</string>
     <string name="forbidden_error">Access forbidden</string>
     <string name="unknown_error">Unknown error</string>
+    <string name="error_loading">Error loading</string>
+    <string name="error_load_group_info">Error load group info</string>
+    <string name="error_load_group_members">Error load group members</string>
 
+    <!-- Chat Screen -->
+    <string name="error_load_members_count">Не удалось загрузить количество участников</string>
+
+    <!-- Logout Dialog -->
     <string name="logout_dialog_title">Log out</string>
     <string name="logout_dialog_message">Are you sure you want to log out?</string>
     <string name="logout_dialog_confirm">Log out</string>
@@ -50,8 +81,6 @@
     <string name="attachment_type_video">Video</string>
     <string name="attachment_type_document">Document</string>
     <string name="prefix_me">You: </string>
-    <string name="status_read">Read</string>
-    <string name="status_delivered">Delivered</string>
     <string name="search_chat_not_found_prefix">Chat with name </string>
     <string name="search_chat_not_found_suffix"> not found</string>
     <string name="favorites_chat_name">Favorites</string>

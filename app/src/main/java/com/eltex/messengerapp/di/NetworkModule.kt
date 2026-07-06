@@ -63,7 +63,12 @@ object NetworkModule {
                 }
                 
                 val path = request.url.encodedPath
-                if ((path.contains("/avatar") || path.contains("/ufs")) && request.url.host == BuildConfig.BASE_HOST) {
+                val isMediaOrAvatar = path.contains("/avatar") || 
+                                     path.contains("/ufs") || 
+                                     path.contains("/file-upload") || 
+                                     path.contains("/rooms.media") || 
+                                     path.contains("/file")
+                if (isMediaOrAvatar && request.url.host == BuildConfig.BASE_HOST) {
                     if (!token.isNullOrEmpty() && !userId.isNullOrEmpty()) {
                         val newUrlBuilder = request.url.newBuilder()
                         if (request.url.queryParameter("rc_token") == null) {
@@ -100,7 +105,12 @@ object NetworkModule {
                 }
                 
                 val path = request.url.encodedPath
-                if ((path.contains("/avatar") || path.contains("/ufs")) && request.url.host == BuildConfig.BASE_HOST) {
+                val isMediaOrAvatar = path.contains("/avatar") || 
+                                     path.contains("/ufs") || 
+                                     path.contains("/file-upload") || 
+                                     path.contains("/rooms.media") || 
+                                     path.contains("/file")
+                if (isMediaOrAvatar && request.url.host == BuildConfig.BASE_HOST) {
                     if (!token.isNullOrEmpty() && !userId.isNullOrEmpty()) {
                         val newUrlBuilder = request.url.newBuilder()
                         if (request.url.queryParameter("rc_token") == null) {
@@ -117,7 +127,9 @@ object NetworkModule {
                 val response = chain.proceed(request)
                 if (response.isRedirect) {
                     val location = response.header("Location")
-                    if (location != null && location.startsWith("http://") && location.contains(BuildConfig.BASE_HOST)) {
+                    val requestHost = request.url.host
+                    if (location != null && location.startsWith("http://") && 
+                        (location.contains(requestHost) || location.contains(BuildConfig.BASE_HOST))) {
                         val secureLocation = location.replaceFirst("http://", "https://")
                         response.newBuilder()
                             .header("Location", secureLocation)

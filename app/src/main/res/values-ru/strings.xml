@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Мессенджер</string>
+    <string name="app_name">Messenger</string>
     <string name="chats">Чаты</string>
     <string name="profile">Профиль</string>
+
+    <!-- Navigation -->
+    <string name="navigate_back">Назад</string>
 
     <!-- Auth Screen -->
     <string name="login_hint">Логин</string>
@@ -16,15 +18,42 @@
     <string name="hide_password_description">Скрыть пароль</string>
     <string name="auth_title">Введите логин и пароль для входа</string>
 
+    <!-- Chats Screen -->
+    <string name="chats_title">Чаты</string>
+    <string name="search_hint">Поиск по чатам</string>
+    <string name="no_chats">Чатов пока нет</string>
+    <string name="chat_not_found_prefix">Чат с названием</string>
+    <string name="chat_not_found_suffix">не найден</string>
+
+    <!-- Chat Screen -->
+    <string name="messages_empty">Сообщений нет</string>
+    <string name="message_hint">Текст сообщения</string>
+
+    <!-- Group Members -->
+    <string name="group_members_count">%d участников</string>
+    <string name="default_group_name">Группа</string>
+    <string name="role_admin">Админ</string>
+    <string name="role_owner">Владелец</string>
+
+    <!-- Status -->
+    <string name="status_read">Прочитано</string>
+    <string name="status_delivered">Доставлено</string>
+
     <!-- Errors -->
     <string name="network_error">Ошибка сети</string>
-    <string name="forbidden_error">Доступ запрещен</string>
+    <string name="forbidden_error">Доступ запрещён</string>
     <string name="unknown_error">Неизвестная ошибка</string>
+    <string name="error_loading">Ошибка загрузки</string>
+    <string name="error_load_group_info">Не удалось загрузить информацию о группе</string>
+    <string name="error_load_group_members">Не удалось загрузить участников группы</string>
 
-    <string name="logout_dialog_title">Выйти из аккаунта</string>
+    <!-- Chat Screen -->
+    <string name="error_load_members_count">Error load members count</string>
+
+    <!-- Logout Dialog -->
+    <string name="logout_dialog_title">Выход</string>
     <string name="logout_dialog_message">Вы уверены, что хотите выйти?</string>
     <string name="logout_dialog_confirm">Выйти</string>
-    <string name="logout_dialog_dismiss">Отменить</string>
 
     <string name="create_chat_title">Новый чат</string>
     <string name="create_chat_cancel">Отменить</string>
@@ -51,8 +80,6 @@
     <string name="attachment_type_video">Видео</string>
     <string name="attachment_type_document">Документ</string>
     <string name="prefix_me">Вы: </string>
-    <string name="status_read">Просмотрено</string>
-    <string name="status_delivered">Доставлено</string>
     <string name="search_chat_not_found_prefix">Чат с названием </string>
     <string name="search_chat_not_found_suffix"> не найден</string>
     <string name="favorites_chat_name">Избранное</string>
@@ -75,4 +102,5 @@
     <string name="arrow_ios_description">Arrow from iOS</string>
     <string name="fullscreen_image_description">Изображение во весь экран</string>
     <string name="close_description">Закрыть</string>
+    <string name="logout_dialog_dismiss">Отмена</string>
 </resources>

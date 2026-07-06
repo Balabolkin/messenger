@@ -32,7 +32,7 @@ class ChatsViewModel @Inject constructor(
     private val ChatsComparator = Comparator<SubscriptionDto> { o1, o2 ->
         val t1 = ChatsDateParser.parse(o1.lastMessage?.ts) ?: ChatsDateParser.parse(o1.ls) ?: ChatsDateParser.parse(o1.ts) ?: 0L
         val t2 = ChatsDateParser.parse(o2.lastMessage?.ts) ?: ChatsDateParser.parse(o2.ls) ?: ChatsDateParser.parse(o2.ts) ?: 0L
-        t2.compareTo(t1) // Descending (latest first)
+        t2.compareTo(t1)
     }
 
     init {
@@ -58,9 +58,12 @@ class ChatsViewModel @Inject constructor(
                 state = state.copy(error = e.message)
             }
         }
+
+        repository.startRealtimeUpdates()
     }
 
     fun onForeground() {
+        repository.startRealtimeUpdates()
         viewModelScope.launch {
             try {
                 repository.refresh()
@@ -117,7 +120,7 @@ class ChatsViewModel @Inject constructor(
         }
         val localFiltered = state.chats.filter {
             it.fname?.contains(query, ignoreCase = true) == true ||
-            it.name?.contains(query, ignoreCase = true) == true
+                    it.name?.contains(query, ignoreCase = true) == true
         }
         return (localFiltered + searchResults)
             .distinctBy { it._id }
@@ -127,8 +130,6 @@ class ChatsViewModel @Inject constructor(
     fun clearError() {
         state = state.copy(error = null)
     }
-
-
 
     override fun onCleared() {
         super.onCleared()

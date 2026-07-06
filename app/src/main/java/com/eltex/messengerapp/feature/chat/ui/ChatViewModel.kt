@@ -9,9 +9,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.eltex.messengerapp.NavDestinations
+import com.eltex.messengerapp.R
+import com.eltex.messengerapp.data.Constants
 import com.eltex.messengerapp.datastore.AuthDataStore
 import com.eltex.messengerapp.feature.chat.domain.ChatRepository
 import com.eltex.messengerapp.feature.chats.data.MessageDto
+import com.eltex.messengerapp.feature.group.domain.GroupRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +32,9 @@ import com.eltex.messengerapp.util.toSecureUrl
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val chatRepository: ChatRepository,
+    private val groupRepository: GroupRepository,
     private val authDataStore: AuthDataStore,
     private val okHttpClient: OkHttpClient,
     savedStateHandle: SavedStateHandle
@@ -46,11 +51,14 @@ class ChatViewModel @Inject constructor(
     private val _currentUserId = MutableStateFlow<String?>(null)
     val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
 
+    private val _membersCount = MutableStateFlow(0)
+    val membersCount: StateFlow<Int> = _membersCount.asStateFlow()
+
     init {
         viewModelScope.launch {
             _currentUserId.value = authDataStore.getUserId().first()
             loadMessages()
-            if (roomType != "d") {
+            if (roomType != Constants.CHAT_TYPE_DIRECT) {
                 loadMembersCount()
             }
         }
@@ -60,13 +68,20 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val count = chatRepository.getMembersCount(roomId)
+                _membersCount.value = count
                 _state.update { it.copy(membersCount = count) }
             } catch (e: Exception) {
-                e.printStackTrace()
+                try {
+                    val info = groupRepository.getGroupInfo(roomId, roomType)
+                    _membersCount.value = info.membersCount
+                    _state.update { it.copy(membersCount = info.membersCount) }
+                } catch (e2: Exception) {
+                    val errorMessage = context.getString(R.string.error_load_members_count)
+                    _state.update { it.copy(error = errorMessage) }
+                }
             }
         }
     }
-
     fun loadMessages() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
@@ -135,7 +150,7 @@ class ChatViewModel @Inject constructor(
                                     val progress = totalBytesRead.toFloat() / contentLength
                                     _state.update { it.copy(downloadingFiles = it.downloadingFiles + (url to progress)) }
                                 }
-                              }
+                            }
                         }
                     }
 
@@ -198,7 +213,7 @@ class ChatViewModel @Inject constructor(
             try {
                 val mediaList = mutableListOf<Uri>()
                 val activeTab = _state.value.activeTab
-                
+
                 if (activeTab == 0) { // Photos
                     val projection = arrayOf(MediaStore.Images.Media._ID)
                     val cursor = context.contentResolver.query(
@@ -240,7 +255,7 @@ class ChatViewModel @Inject constructor(
                         }
                     }
                 }
-                
+
                 _state.update { it.copy(localMediaList = mediaList) }
             } catch (e: Exception) {
                 e.printStackTrace()

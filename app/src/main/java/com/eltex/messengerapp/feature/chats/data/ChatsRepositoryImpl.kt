@@ -156,6 +156,7 @@ class ChatsRepositoryImpl @Inject constructor(
     }
 
     override fun startRealtimeUpdates() {
+        if (webSocket != null) return
         shouldReconnect = true
         connectWebSocket()
     }

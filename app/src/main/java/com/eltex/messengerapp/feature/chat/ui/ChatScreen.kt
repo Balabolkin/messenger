@@ -109,6 +109,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.eltex.messengerapp.R
+import com.eltex.messengerapp.data.Constants
 import com.eltex.messengerapp.feature.chats.data.AttachmentDto
 import com.eltex.messengerapp.feature.chats.data.ChatsDateParser
 import com.eltex.messengerapp.feature.chats.data.MessageDto
@@ -141,10 +142,12 @@ fun ChatScreen(
     roomType: String,
     avatarName: String? = null,
     onBack: () -> Unit,
+    onNavigateToGroupMembers: (String, String, String) -> Unit,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+    val membersCount by viewModel.membersCount.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -173,7 +176,13 @@ fun ChatScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (roomType != Constants.CHAT_TYPE_DIRECT) {
+                                    onNavigateToGroupMembers(roomId, roomName, roomType)
+                                }
+                            }
                     ) {
                         // Room Avatar
                         Box(
@@ -202,6 +211,7 @@ fun ChatScreen(
                             )
                         }
 
+
                         Spacer(modifier = Modifier.width(12.dp))
 
                         Column {
@@ -213,20 +223,20 @@ fun ChatScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                             if (roomType != "d") {
-                                 val count = state.membersCount ?: DEFAULT_MEMBERS_COUNT
-                                 Text(
-                                     text = stringResource(R.string.members_count, count),
-                                     color = Color.White.copy(alpha = 0.7f),
-                                     fontSize = 12.sp,
-                                     fontWeight = FontWeight.Normal
-                                 )
-                             }
+                            if (roomType != "d") {
+                                Text(
+                                    text = stringResource(R.string.members_count, membersCount),
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
                         }
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack
+                    ) {
                         Icon(
                             imageVector = Icons.Default.ChevronLeft,
                             contentDescription = stringResource(R.string.back_button_description),
